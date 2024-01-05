@@ -1,0 +1,18 @@
+service : {
+    "get_canister_id" : () -> ();
+    "hello_test": () -> (text) composite_query;
+    "hello": () -> (text) query;
+
+    "upload_model_chunks" : (vec nat8) -> ();
+
+    "initialize_model_pipeline" : () -> ();
+    "model_bytes_to_plan" : () -> ();
+    "plan_to_running_model" : () -> ();
+
+    "word_embeddings": (text) -> (vec float32) composite_query;
+    "sub_nn_compute_i64": (nat8, vec int64, vec nat64) -> (vec float32, vec nat64) query;
+    "sub_nn_compute_f32": (nat8, vec float32, vec nat64) -> (vec float32, vec nat64) query;
+
+
+
+}

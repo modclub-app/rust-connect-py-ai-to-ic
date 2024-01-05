@@ -1,0 +1,40 @@
+**/target/
+**/*.rs.bk
+**/*.pyc
+**/*.o
+**/*.a
+**/*.swp
+.DS_Store
+.idea/
+
+# Generated Models
+**/*.onnx
+
+
+# Various IDEs and Editors
+.vscode/
+.idea/
+**/*~
+
+# Mac OSX temporary files
+.DS_Store
+**/.DS_Store
+
+# dfx temporary files
+.dfx/
+
+# generated files
+src/declarations/
+
+# rust
+target/
+
+# frontend code
+node_modules/
+dist/
+
+# environment variables
+.env
+
+#
+Rust/libonnxruntime/*

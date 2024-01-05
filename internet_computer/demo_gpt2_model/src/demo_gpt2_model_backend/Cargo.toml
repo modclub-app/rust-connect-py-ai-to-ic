@@ -1,0 +1,28 @@
+[package]
+name = "demo_gpt2_model_backend"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+#candid = "0.8"
+ic-cdk = "0.7"
+#ic-cdk-timers = "0.1" # Feel free to remove this dependency if you don't need timers
+#tract-onnx = { path="../../../../../onnx-min-byte", default-features = false}
+#tract-core = { version = "=0.20.22-pre", path = "../../../../../tract-main/core" , default-features = false}
+#tract-hir = { version = "=0.20.22-pre", path = "../../../../../onnx-min-byte-dependencies/hir", default-features = false}
+#tract-data = { version = "=0.20.22-pre", path = "../../../../../tract-main/data" , default-features = false}
+tract-onnx = { path="../../../../../tract-ic-ai/onnx", default-features = false}
+tract-core = { path = "../../../../../tract-ic-ai/core" , default-features = false}
+tract-hir = { path = "../../../../../tract-ic-ai/hir", default-features = false}
+tract-data = { path = "../../../../../tract-ic-ai/data" , default-features = false}
+bytes = { version = "1.0.1", default-features = false }
+#getrandom = { version = "0.2.6", features = ["js"]}
+
+[profile.release]
+opt-level = 'z'  # Optimize for size
+lto = true       # Enable Link Time Optimization
