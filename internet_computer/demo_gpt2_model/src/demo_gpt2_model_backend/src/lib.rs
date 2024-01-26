@@ -15,25 +15,6 @@ fn get_canister_id() {
 }
 
 
-#[ic_cdk::query(composite=true)]
-async fn hello_test() -> String {
-    let canister_name = ic_cdk::api::id();
-    match ic_cdk::call(canister_name, "hello", ( ), ).await {
-        Ok(r) => {
-            let (res,): (String,) = r;
-            res
-        },
-        Err(_) => format!("failure"),
-    }
-}
-
-
-#[ic_cdk::query]
-fn hello() -> String {
-    format!("hello")
-}
-
-
 type SimplePlanTypeRead = tract_core::model::graph::Graph<
     tract_hir::infer::fact::InferenceFact,
     std::boxed::Box<

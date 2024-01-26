@@ -1,7 +1,5 @@
 service : {
     "get_canister_id" : () -> ();
-    "hello_test": () -> (text) composite_query;
-    "hello": () -> (text) query;
 
     "upload_model_chunks" : (vec nat8) -> ();
 

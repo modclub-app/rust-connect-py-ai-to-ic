@@ -10,15 +10,10 @@ edition = "2021"
 
 [dependencies]
 #tract-onnx = "0.20.21"
-#tract-onnx = { path="../../../onnx-min", default-features = false }
-#tract-onnx = { path="../../../onnx-min-byte", default-features = false }
-#tract-core = { version = "=0.20.22-pre", path = "../../../tract-main/core" , default-features = false}
-tract-onnx = { path="../../../tract-ic-ai/onnx", default-features = false }
-tract-core = { path = "../../../tract-ic-ai/core" , default-features = false}
+tract-onnx = { git = "https://github.com/jeshli/tract-ic-ai.git", branch = "main", package = "tract-onnx" }
+tract-core = { git = "https://github.com/jeshli/tract-ic-ai.git", branch = "main", package = "tract-core" }
 
 bytes = { version = "1.0.1", default-features = false}
-#tract-onnx = { path="../../../tract-main/onnx", default-features = false}
-#tract-nnef  = { path="../../../tract-main/nnef", default-features = false}
 anyhow = "1.0"
 #smallvec = "1.11.2"
 smallvec = "1.6.1"
