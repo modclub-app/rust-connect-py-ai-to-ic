@@ -22,6 +22,8 @@ Focused on ease of use and versatility, `rust-connect-py-ai-to-ic` aims to strea
 
 (Provide examples and usage instructions here)
 
+cargo run --manifest-path ../../Rust/upload_byte_file/Cargo.toml ../../Experiments/ONNX_Model/wte_gpt2_mean.onnx demo_gpt2_model_backend upload_model_chunks
+
 ## Contributing
 
 We welcome contributions! Please read our contributing guidelines to get started.
