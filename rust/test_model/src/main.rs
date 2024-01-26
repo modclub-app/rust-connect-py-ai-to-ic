@@ -1,7 +1,9 @@
 use anyhow::{Error, Result}; // Import Error and Result type from anyhow
 use tract_onnx::prelude::*;
-use std::path::Path;
+use tract_onnx::FrameworkExtension;
 use std::time::Instant;
+
+
 
 static STATE_ENCODED: &[u8] = include_bytes!("../../../python/onnx_model/simplest_good_model.onnx");
 
