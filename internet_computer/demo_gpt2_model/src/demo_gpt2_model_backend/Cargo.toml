@@ -12,10 +12,10 @@ crate-type = ["cdylib"]
 #candid = "0.8"
 ic-cdk = "0.7"
 #ic-cdk-timers = "0.1" # Feel free to remove this dependency if you don't need timers
-tract-onnx = { git = "https://github.com/jeshli/tract-ic-ai.git", branch = "main", package = "tract-onnx" }
-tract-core = { git = "https://github.com/jeshli/tract-ic-ai.git", branch = "main", package = "tract-core" }
-tract-hir = { git = "https://github.com/jeshli/tract-ic-ai.git", branch = "main", package = "tract-hir" }
-tract-data = { git = "https://github.com/jeshli/tract-ic-ai.git", branch = "main", package = "tract-data" }
+tract-onnx = { git = "https://github.com/modclub-app/tract-ic-ai.git", branch = "main", package = "tract-onnx" }
+tract-core = { git = "https://github.com/modclub-app/tract-ic-ai.git", branch = "main", package = "tract-core" }
+tract-hir = { git = "https://github.com/modclub-app/tract-ic-ai.git", branch = "main", package = "tract-hir" }
+tract-data = { git = "https://github.com/modclub-app/tract-ic-ai.git", branch = "main", package = "tract-data" }
 
 
 bytes = { version = "1.0.1", default-features = false }

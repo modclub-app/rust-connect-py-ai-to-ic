@@ -10,8 +10,8 @@ edition = "2021"
 
 [dependencies]
 #tract-onnx = "0.20.21"
-tract-onnx = { git = "https://github.com/jeshli/tract-ic-ai.git", branch = "main", package = "tract-onnx" }
-tract-core = { git = "https://github.com/jeshli/tract-ic-ai.git", branch = "main", package = "tract-core" }
+tract-onnx = { git = "https://github.com/modclub-app/tract-ic-ai.git", branch = "main", package = "tract-onnx" }
+tract-core = { git = "https://github.com/modclub-app/tract-ic-ai.git", branch = "main", package = "tract-core" }
 
 bytes = { version = "1.0.1", default-features = false}
 anyhow = "1.0"
