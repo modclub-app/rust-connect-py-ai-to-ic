@@ -1,58 +1,80 @@
 
-//use crate::{dfx::dfx, error::create_error_string};
-use tempfile::NamedTempFile;
-//use std::io::Write;
-use std::process::Command;
-use std::io::Write;
-
-
-//pub const MAX_CANISTER_HTTP_PAYLOAD_SIZE: usize = 2 * 1024 * 1024; // 2 MiB
-pub const MAX_CANISTER_HTTP_PAYLOAD_SIZE: usize = 2 * 1000 * 1000; // 2 MiB
-
-
-
-// let path = "model/demo_regression.onnx"
-// let canister_name = demo_gpt2_model_backend
-// let canister_method_name = upload_model_chunks
 
 use std::env;
+use std::fs;
+use std::process::Command;
+use std::io::Write;
+use tempfile::NamedTempFile;
+use std::path::Path;
+
+pub const MAX_CANISTER_HTTP_PAYLOAD_SIZE: usize = 2 * 1000 * 1000; // 2 MiB
+//cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml demo_gpt2_model_backend upload_model_chunks ../../python/onnx_model/ <gpt2_embedding.onnx,gpt2_layer_0.onnx>
+
+
 
 //fn main(path: &str, canister_name: &str, canister_method_name: &str) -> Result<(), String> {
 fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
 
     // Ensure there are enough arguments
-    if args.len() < 4 {
-        return Err("Not enough arguments. Usage: <program> <path> <canister_name> <canister_method_name>".to_string());
+    if args.len() < 5 {
+        return Err("Not enough arguments. Usage: <program> <canister_name> <canister_method_name> <model_folder_path> <models_list>".to_string());
     }
 
-    let path = &args[1];
-    let canister_name = &args[2];
-    let canister_method_name = &args[3];
+    //let program = &args[0];                                        //         ../../rust/upload_byte_file/Cargo.toml
+    let canister_name = &args[1];                               //          demo_gpt2_model_backend
+    let canister_method_name = &args[2];                        //          upload_model_chunks
+    let model_directory = &args[3];                                  //          ../../python/onnx_model/
+    //let model_files: Vec<&str> = args[4].split(',').collect();  //          <gpt2_embedding.onnx,gpt2_layer_0.onnx>
+    let model_files_input = args[4].trim_matches(|c| c == '[' || c == ']');
+    let model_files: Vec<&str> = model_files_input.split(',').collect();
 
-    println!("Hello, world!");
+    //println!("Hello, world!");
+    simple_dfx_execute(canister_name, "initialize_model_pipeline");
 
-    let model_file = std::fs::read(
-        path
-    )
-    .map_err(|e| error_to_string(&e))?;
 
-    let model_chunks = split_into_chunks(model_file, MAX_CANISTER_HTTP_PAYLOAD_SIZE);
+    for model_file in model_files {
+        let model_path = Path::new(model_directory).join(model_file);
+        let model_path_str = model_path.to_str().ok_or("Failed to convert path to string")?;
 
-    for (index, model_chunk) in model_chunks.iter().enumerate() {
-        upload_chunk(
-            &format!("{canister_name} model"),
-            canister_name,
-            model_chunk,
-            canister_method_name,
-            index,
-            model_chunks.len(),
-        )?;
+        println!("Uploading {}", model_path_str);
+
+        let model_data = fs::read(&model_path)
+            .map_err(|e| e.to_string())?;
+
+        let model_chunks = split_into_chunks(model_data, MAX_CANISTER_HTTP_PAYLOAD_SIZE);
+
+        for (index, model_chunk) in model_chunks.iter().enumerate() {
+            upload_chunk(
+                &format!("{canister_name} model"),
+                canister_name,
+                model_chunk,
+                canister_method_name,
+                index,
+                model_chunks.len(),
+            )?;
+        }
+
+        simple_dfx_execute(canister_name, "model_bytes_to_plan");
+        simple_dfx_execute(canister_name, "plan_to_running_model");
     }
+
+    // loop through the models
 
     Ok(())
 }
 
+//pub fn simple_dfx_execute(canister_name: &str, canister_method_name: &str) -> Result<(), String> {
+pub fn simple_dfx_execute(canister_name: &str, canister_method_name: &str){
+    let output = dfx(
+        "canister",
+        "call",
+        &vec![
+            canister_name,
+            canister_method_name,
+        ],
+    ).expect("Simple DFX Command Failed");
+}
 
 
 pub fn split_into_chunks(data: Vec<u8>, chunk_size: usize) -> Vec<Vec<u8>> {
