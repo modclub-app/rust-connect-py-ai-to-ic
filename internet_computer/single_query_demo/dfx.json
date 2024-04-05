@@ -1,0 +1,17 @@
+{
+  "canisters": {
+    "single_query_demo_backend": {
+      "candid": "src/single_query_demo_backend/single_query_demo_backend.did",
+      "package": "single_query_demo_backend",
+      "type": "rust"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

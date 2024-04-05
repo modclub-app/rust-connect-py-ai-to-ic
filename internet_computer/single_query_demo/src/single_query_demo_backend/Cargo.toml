@@ -1,0 +1,26 @@
+[package]
+name = "single_query_demo_backend"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+candid = "0.10"
+ic-cdk = "0.13"
+ic-cdk-timers = "0.7" # Feel free to remove this dependency if you don't need timers
+tract-onnx = { git = "https://github.com/modclub-app/tract-ic-ai.git", branch = "main", package = "tract-onnx" }
+tract-core = { git = "https://github.com/modclub-app/tract-ic-ai.git", branch = "main", package = "tract-core" }
+tract-hir = { git = "https://github.com/modclub-app/tract-ic-ai.git", branch = "main", package = "tract-hir" }
+tract-data = { git = "https://github.com/modclub-app/tract-ic-ai.git", branch = "main", package = "tract-data" }
+bytes = { version = "1.0.1", default-features = false }
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.release]
+opt-level = 'z'  # Optimize for size
+lto = true       # Enable Link Time Optimization

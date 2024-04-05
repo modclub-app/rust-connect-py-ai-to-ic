@@ -1,0 +1,9 @@
+service : {
+    "upload_model_chunks" : (vec nat8) -> ();
+    "model_bytes_to_plan" : () -> ();
+    "plan_to_running_model" : () -> ();
+    "model_inference": (vec int64) -> (vec float32) query;
+    "clear_wasm_ref_cell": () -> ();
+    "pop_last_from_wasm_ref_cell": () -> ();
+    "wasm_ref_cell_length": () -> (nat64) query;
+}

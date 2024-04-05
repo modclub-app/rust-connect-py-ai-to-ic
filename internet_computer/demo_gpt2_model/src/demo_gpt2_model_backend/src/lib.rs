@@ -9,9 +9,10 @@ use tract_onnx::prelude::InferenceModelExt;
 
 
 #[ic_cdk::query]
-fn get_canister_id() {
+fn get_canister_id() -> String {
     let canister_name = ic_cdk::api::id();
     ic_cdk::println!("Created canister {}", canister_name);
+    canister_name
 }
 
 

@@ -1,5 +1,5 @@
 service : {
-    "get_canister_id" : () -> ();
+    "get_canister_id" : () -> (text);
 
     "upload_model_chunks" : (vec nat8) -> ();
 
