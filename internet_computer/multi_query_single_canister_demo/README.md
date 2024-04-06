@@ -8,7 +8,7 @@ Once the setup is complete, you can proceed with the following steps to build, d
 
 1. Build the Rust project targeting WebAssembly:
    ```bash
-   cargo build --target wasm32-unknown-unknown --release -p single_query_demo_backend
+   cargo build --target wasm32-unknown-unknown --release -p multi_query_single_canister_demo_backend
    ```
 2. Start the Dfinity network locally in the background:
    ```bash
@@ -60,7 +60,13 @@ These instructions guide you through running a demonstration of our application,
   python3 python/GPT2_max_partition_model_pool.py
   ```
 
-### Step 3: Load the Model into the Backend
+### Step 3: Build and Deploy
+
+1. cargo build --target wasm32-unknown-unknown --release -p multi_query_single_canister_demo_backend
+2. dfx start --background
+3. dfx deploy
+
+### Step 4: Load the Model into the Backend
 
 1. **Initialization**: Start by initializing the model pipeline.
 
@@ -101,7 +107,7 @@ These instructions guide you through running a demonstration of our application,
    plan_to_running_model: () → ();
    ```
 
-### Step 4: Interact with the Backend Canister API
+### Step 5: Interact with the Backend Canister API
 
 - Access the backend Canister API at the given endpoint for testing:
 
@@ -109,7 +115,7 @@ These instructions guide you through running a demonstration of our application,
   word_embeddings: (vec int64) → (vec float32) composite_query
   ```
 
-### Step 5: Test the API
+### Step 6: Test the API
 
 - Demonstrate the model's functionality by inputting tokens such as `[1, 4, 5]` to generate word embeddings.
 
