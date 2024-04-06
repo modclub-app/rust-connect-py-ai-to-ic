@@ -11,5 +11,4 @@ service : {
     "sub_nn_compute_i64": (nat8, vec int64, vec nat64) -> (vec float32, vec nat64) query;
     "sub_nn_compute_f32": (nat8, vec float32, vec nat64) -> (vec float32, vec nat64) query;
 
-
 }
