@@ -18,7 +18,7 @@ Once the setup is complete, you can proceed with the following steps to build, d
    ```bash
    dfx deploy
    ```
-4. Use the Cargo command to run specific tasks, such as uploading model chunks. Replace the demo models `[gpt2_embedding.onnx, gpt2_layer_0.onnx]` with your actual model file names:
+4. Use the Cargo command to run specific tasks, such as uploading model chunks. Replace the demo models `[gpt2_embedding.onnx]` with your actual model file names:
    ```bash
    cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml demo_gpt2_model_backend upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx, gpt2_layer_0.onnx] 0
    ```
@@ -57,9 +57,18 @@ These instructions guide you through running a demonstration of our application,
 
 ### Step 3: Build and Deploy
 
-1. cargo build --target wasm32-unknown-unknown --release -p single_query_demo_backend
-2. dfx start --background
-3. dfx deploy
+1. 
+```bash
+   cargo build --target wasm32-unknown-unknown --release -p single_query_demo_backend
+  ```
+2. 
+```bash
+   dfx start --background
+  ```
+3. 
+```bash
+   dfx deploy
+  ```
 
 ### Step 4: Load the Model into the Backend
 

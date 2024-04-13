@@ -62,9 +62,17 @@ These instructions guide you through running a demonstration of our application,
 
 ### Step 3: Build and Deploy
 
-1. cargo build --target wasm32-unknown-unknown --release -p multi_query_single_canister_demo_backend
-2. dfx start --background
-3. dfx deploy
+```bash
+   cargo build --target wasm32-unknown-unknown --release -p multi_query_single_canister_demo_backend
+  ```
+2. 
+```bash
+   dfx start --background
+  ```
+3. 
+```bash
+   dfx deploy
+  ```
 
 ### Step 4: Load the Model into the Backend
 
