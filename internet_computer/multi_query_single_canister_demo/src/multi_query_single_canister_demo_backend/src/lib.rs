@@ -7,13 +7,14 @@ use tract_onnx::prelude::IntoTensor;
 use tract_onnx::prelude::InferenceModelExt;
 
 
-
+/*
 #[ic_cdk::query]
 fn get_canister_id() -> String {
     let canister_name = ic_cdk::api::id();
     ic_cdk::println!("Created canister {}", canister_name);
     canister_name
 }
+*/
 
 
 type SimplePlanTypeRead = tract_core::model::graph::Graph<
@@ -93,6 +94,16 @@ fn initialize_model_pipeline() {
         *pipeline = Some(ModelPipeline::new()); // Assuming ModelPipeline has a new() method
     });
 }
+
+#[ic_cdk::update]
+fn clear_model_pipeline() {
+    MODEL_PIPELINE.with(|pipeline_ref| {
+        if let Some(ref mut pipeline) = *pipeline_ref.borrow_mut() {
+            pipeline.clear();
+        }
+    });
+}
+
 
 fn add_model_to_pipeline(model: SimplePlanTypeRun) {
     MODEL_PIPELINE.with(|pipeline_ref| {
