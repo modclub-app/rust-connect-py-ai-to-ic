@@ -192,13 +192,17 @@ Canister Queries
 #[ic_cdk::query(composite = true)]
 async fn model_inference(numbers: Vec<i64>) -> Vec<f32> {
 
-    let output: Vec<f32> = run_model_and_get_result_chain(numbers).await {
+    let output:Vec<f32> = run_model_and_get_result_chain(numbers).await;
+
+    /*
+    let output: Vec<f32> = match create_tensor_and_run_model(numbers) {
     Ok(result) => result,
     Err(e) => {
         ic_cdk::println!("Failed: {}", e);
         vec![-1.0] // Return a default vector as specified
     }
     };
+    */
 
     output
 
