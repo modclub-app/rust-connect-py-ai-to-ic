@@ -190,31 +190,20 @@ Canister Queries
 
 
 #[ic_cdk::query(composite = true)]
-async fn word_embeddings(input_text: String) -> Vec<f32> {
+async fn model_inference(numbers: Vec<i64>) -> Vec<f32> {
 
-    // Trim, remove brackets, split by comma, and parse each number
-    let numbers_result: Result<Vec<i64>, _> = input_text
-        .trim()                        // Trim whitespace
-        .trim_matches(|c| c == '[' || c == ']')  // Remove brackets
-        .split(',')                    // Split by comma
-        .map(|num_str| num_str.trim().parse::<i64>()) // Parse each number
-        .collect();                    // Collect into a Result<Vec<i64>, E>
-
-    // Handle the result
-    let numbers = match numbers_result {
-        Ok(vec) => vec,
-        Err(e) => {
-            // Handle the error
-            //eprintln!("Failed to parse number: {}", e);
-            ic_cdk::println!("Failed to parse number: {}", e);
-            vec![]  // Return an empty vector or handle as needed
-        },
+    let output: Vec<f32> = run_model_and_get_result_chain(numbers).await {
+    Ok(result) => result,
+    Err(e) => {
+        ic_cdk::println!("Failed: {}", e);
+        vec![-1.0] // Return a default vector as specified
+    }
     };
 
-    let output:Vec<f32> = run_model_and_get_result_chain(numbers).await;
     output
 
 }
+
 
 
 async fn run_model_and_get_result_chain(token_ids: Vec<i64>) -> Vec<f32> {

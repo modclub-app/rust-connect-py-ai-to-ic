@@ -25,7 +25,7 @@ Once the setup is complete, you can proceed with the following steps to build, d
    ```
 5. Use the Cargo command to run specific tasks, such as uploading model chunks. Replace the demo models `[gpt2_embedding.onnx, gpt2_layer_0.onnx]` with your actual model file names:
    ```bash
-   cargo run --manifest-path ../../rust/upload_multiple_byte_files/Cargo.toml multi_query_single_canister_demo_backend upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx, gpt2_layer_0.onnx] 0
+   cargo run --manifest-path ../../rust/upload_multiple_byte_files/Cargo.toml multi_query_single_canister_demo_backend upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx, gpt2_layer_0.onnx]
    ```
    
 6. **Model Preparation**: Follow the commands to prepare the model for use:

@@ -8,7 +8,7 @@ service : {
     "plan_to_running_model" : () -> ();
     "clear_model_pipeline": () -> ();
 
-    "word_embeddings": (text) -> (vec float32) composite_query;
+    "model_inference": (vec int64) -> (vec float32) composite_query;
     "sub_nn_compute_i64": (nat8, vec int64, vec nat64) -> (vec float32, vec nat64) query;
     "sub_nn_compute_f32": (nat8, vec float32, vec nat64) -> (vec float32, vec nat64) query;
 

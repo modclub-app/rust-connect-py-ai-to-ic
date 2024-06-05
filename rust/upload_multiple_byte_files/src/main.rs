@@ -35,8 +35,8 @@ fn main() -> Result<(), String> {
     let network_type = args.get(5).map(String::as_str); // This returns Option<&str>
 
     //println!("Hello, world!");
-    simple_dfx_execute(canister_name, "initialize_model_pipeline");
-
+    //simple_dfx_execute(canister_name, "initialize_model_pipeline");
+    simple_dfx_execute(canister_name, "initialize_model_pipeline", network_type);
 
     for model_file in model_files {
         let model_path = Path::new(model_directory).join(model_file);
@@ -47,7 +47,7 @@ fn main() -> Result<(), String> {
         let model_data = fs::read(&model_path)
             .map_err(|e| e.to_string())?;
 
-        let model_chunks = split_into_chunks(model_data, MAX_CANISTER_HTTP_PAYLOAD_SIZE, start_ind);
+        let model_chunks = split_into_chunks(model_data, MAX_CANISTER_HTTP_PAYLOAD_SIZE);
 
         for (index, model_chunk) in model_chunks.iter().enumerate() {
             upload_chunk(
@@ -61,11 +61,11 @@ fn main() -> Result<(), String> {
             )?;
         }
 
-        simple_dfx_execute(canister_name, "model_bytes_to_plan");
-        simple_dfx_execute(canister_name, "plan_to_running_model");
+        //simple_dfx_execute(canister_name, "model_bytes_to_plan");
+        //simple_dfx_execute(canister_name, "plan_to_running_model");
         // pausing automatic writing of model
-        //simple_dfx_execute(canister_name, "model_bytes_to_plan", network_type);
-        //simple_dfx_execute(canister_name, "plan_to_running_model", network_type);
+        simple_dfx_execute(canister_name, "model_bytes_to_plan", network_type);
+        simple_dfx_execute(canister_name, "plan_to_running_model", network_type);
     }
 
     // loop through the models
@@ -99,10 +99,10 @@ pub fn simple_dfx_execute(canister_name: &str, canister_method_name: &str, netwo
     ).expect("Simple DFX Command Failed");
 }
 
-pub fn split_into_chunks(data: Vec<u8>, chunk_size: usize, start_ind: usize) -> Vec<Vec<u8>> {
+pub fn split_into_chunks(data: Vec<u8>, chunk_size: usize) -> Vec<Vec<u8>> {
     let mut chunks = Vec::new();
-    //let mut start = 0;
-    let mut start = start_ind;
+    let mut start = 0;
+    //let mut start = start_ind;
     let data_len = data.len();
     println!("Data Length {}", data_len);
     while start < data_len {
