@@ -1,0 +1,21 @@
+{
+  "canisters": {
+    "wasi_ic_ai_sequence_backend": {
+      "candid": "src/wasi_ic_ai_sequence_backend/wasi_ic_ai_sequence_backend.did",
+      "package": "wasi_ic_ai_sequence_backend",
+      "type": "custom",
+      "wasm": "./target/wasm32-wasi/release/wasi_ic_ai_sequence_backend-ic.wasm",
+      "build": [ "bash build.sh" ],
+      "shrink": true,
+      "gzip": true
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
