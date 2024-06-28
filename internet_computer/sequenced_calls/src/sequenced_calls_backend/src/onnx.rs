@@ -3,6 +3,8 @@ use prost::Message;
 use tract_onnx::prelude::*;
 use anyhow::anyhow;
 use crate::upload_utils::call_model_bytes;
+use candid::{CandidType, Deserialize};
+
 
 type Model = SimplePlan<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>;
 
@@ -44,6 +46,26 @@ impl ModelPipeline {
         }
     }
 }
+
+
+
+#[derive(CandidType, Deserialize)]
+enum TensorInput {
+    F32(Vec<f32>),
+    I64(Vec<i64>),
+}
+
+
+#[derive(CandidType, Deserialize)]
+enum ModelInferenceResult {
+    Ok(Vec<f32>),
+    Err(String),
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+
+
+
 
 #[ic_cdk::update]
 pub fn pipeline_init() {
@@ -94,45 +116,60 @@ fn setup_model() -> Result<(), String> {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// Runs the model on the given image and returns top three labels.
-pub fn create_tensor_and_run_model_pipeline(input: Vec<i64>) -> Result<Vec<f32>, anyhow::Error> {
+////////////////////////////////////////////////////////////////////////////////////////////////////
+pub fn create_tensor_and_run_model_pipeline(input: Vec<i64>) -> Result<Vec<f32>, String> {
     let mut input_shape = vec![1, input.len()];
-    let mut output: Vec<f32> = Vec::new(); // Initialize output as an empty Vec<f32>
+    let mut input_tensor = TensorInput::I64(input);
 
     let num_models = MODEL_PIPELINE.with(|pipeline_ref| {
         pipeline_ref.borrow().as_ref().map_or(0, |pipeline| pipeline.models.len())
     });
 
     for index in 0..num_models as u8 {
-        let input_tensor = if index == 0 {
-            match tract_ndarray::Array::from_shape_vec(input_shape.clone(), input.clone()) {
-                Ok(array) => array.into_tensor(),
-                Err(_) => return Err(anyhow!("Failed to create tensor from shape and values")),
-            }
-        } else {
-            match tract_ndarray::Array::from_shape_vec(input_shape.clone(), output.clone()) {
-                Ok(array) => array.into_tensor(),
-                Err(_) => return Err(anyhow!("Failed to create tensor from shape and values")),
-            }
-        };
-
-        let call_result = MODEL_PIPELINE.with(|pipeline_ref| {
-            pipeline_ref.borrow().as_ref().ok_or_else(|| anyhow!("Model pipeline is not initialized"))?
-                .run_model_at_index(index, input_tensor)
-        });
+        let call_result = model_sub_compute(index, input_tensor.clone(), input_shape.clone()).await;
 
         match call_result {
-            Ok((new_output, new_input_shape)) => {
+            ModelInferenceResult::Ok(new_output, new_input_shape) => {
                 input_shape = new_input_shape;
-                output = new_output;
+                input_tensor = TensorInput::F32(new_output);
             }
-            Err(e) => {
-                return Err(anyhow!("No Data in Result: {}", e));
+            ModelInferenceResult::Err(e) => {
+                return Err(format!("No Data in Result: {}", e));
             }
         }
     }
 
-    Ok(output)
+    if let TensorInput::F32(output) = input_tensor {
+        Ok(output)
+    } else {
+        Err("Final tensor is not of type f32".to_string())
+    }
+}
+
+
+
+#[ic_cdk::query]
+fn model_sub_compute(index: u8, input: TensorInput, input_shape: Vec<usize>) -> ModelInferenceResult {
+    let input_tensor = match input {
+        TensorInput::F32(data) => match Array::from_shape_vec(input_shape, data) {
+            Ok(array) => array.into_tensor(),
+            Err(_) => return ModelInferenceResult::Err("Failed to create tensor from shape and values".to_string()),
+        },
+        TensorInput::I64(data) => match Array::from_shape_vec(input_shape, data) {
+            Ok(array) => array.into_tensor(),
+            Err(_) => return ModelInferenceResult::Err("Failed to create tensor from shape and values".to_string()),
+        },
+    };
+
+    let call_result = MODEL_PIPELINE.with(|pipeline_ref| {
+        let pipeline = pipeline_ref.borrow();
+        let model = pipeline.as_ref().ok_or_else(|| "Model pipeline is not initialized".to_string())?;
+        model.run_model_at_index(index, input_tensor)
+    });
+
+    match call_result {
+        Ok((output, _)) => ModelInferenceResult::Ok(output),
+        Err(e) => ModelInferenceResult::Err(format!("Model computation failed: {}", e)),
+    }
 }
