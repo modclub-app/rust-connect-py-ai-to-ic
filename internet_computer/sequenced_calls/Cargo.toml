@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "src/wasi_ic_ai_sequence_backend"
+    "src/sequenced_calls_backend"
 ]
 resolver = "2"

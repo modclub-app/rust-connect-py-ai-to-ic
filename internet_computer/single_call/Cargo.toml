@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "src/wasi_ic_ai_single_backend"
+    "src/single_call_backend"
 ]
 resolver = "2"

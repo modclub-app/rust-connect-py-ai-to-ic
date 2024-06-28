@@ -1202,6 +1202,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "single_call_backend"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "candid",
+ "ic-cdk",
+ "ic-cdk-timers",
+ "ic-stable-structures",
+ "ic-wasi-polyfill",
+ "prost",
+ "prost-types",
+ "serde",
+ "tract-onnx",
+]
+
+[[package]]
 name = "slab"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1575,23 +1592,6 @@ name = "wasi"
 version = "0.11.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
-
-[[package]]
-name = "wasi_ic_ai_single_backend"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytes",
- "candid",
- "ic-cdk",
- "ic-cdk-timers",
- "ic-stable-structures",
- "ic-wasi-polyfill",
- "prost",
- "prost-types",
- "serde",
- "tract-onnx",
-]
 
 [[package]]
 name = "winapi"
