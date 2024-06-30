@@ -7,15 +7,8 @@ mod upload_utils;
 //mod stable_storage;
 
 
-use sequenced_calls_backend::onnx::{create_tensor_and_run_model_pipeline, ModelInferenceResult};
+use onnx::{create_tensor_and_run_model_pipeline, ModelInferenceResult};
 
-#[ic_cdk::query(composite = true)]
-fn model_inference(numbers: Vec<i64>) -> ModelInferenceResult {
-    match create_tensor_and_run_model_pipeline(numbers).await {
-        Ok(result) => ModelInferenceResult::Ok(result),
-        Err(err) => ModelInferenceResult::Err(err),
-    }
-}
 
 
 // WASI polyfill requires a virtual stable memory to store the file system.
@@ -30,24 +23,10 @@ thread_local! {
 }
 
 
-/*
-#[ic_cdk::query]
-fn model_inference(numbers: Vec<i64>) -> Result<Vec<f32>, String> {
-    match onnx::create_tensor_and_run_model(numbers) {
-        Ok(result) => Ok(result),
-        Err(err) => Err(err.to_string()),
-    }
+#[ic_cdk::update]
+fn model_inference(numbers: Vec<i64>) -> ModelInferenceResult {
+    create_tensor_and_run_model_pipeline(numbers) //.await
 }
-*/
-
-#[ic_cdk::query(composite = true)]
-fn model_inference(numbers: Vec<i64>) -> Result<Vec<f32>, String> {
-    match onnx::create_tensor_and_run_model_pipeline(numbers) {
-        Ok(result) => Ok(result),
-        Err(err) => Err(err),
-    }
-}
-
 
 
 

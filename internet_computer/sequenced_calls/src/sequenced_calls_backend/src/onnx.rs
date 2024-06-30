@@ -50,17 +50,24 @@ impl ModelPipeline {
 
 
 #[derive(CandidType, Deserialize)]
-enum TensorInput {
+pub enum TensorInput {
     F32(Vec<f32>),
     I64(Vec<i64>),
 }
 
 
 #[derive(CandidType, Deserialize)]
-enum ModelInferenceResult {
+pub enum ModelInferenceResult {
     Ok(Vec<f32>),
     Err(String),
 }
+
+
+//#[derive(CandidType, Deserialize)]
+//pub enum ModelInferenceWithShapeResult {
+//    Ok(Vec<f32>, Vec<usize>),
+//    Err(String),
+//}
 
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -118,7 +125,9 @@ fn setup_model() -> Result<(), String> {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-pub fn create_tensor_and_run_model_pipeline(input: Vec<i64>) -> Result<Vec<f32>, String> {
+
+
+pub fn create_tensor_and_run_model_pipeline(input: Vec<i64>) -> ModelInferenceResult {
     let mut input_shape = vec![1, input.len()];
     let mut input_tensor = TensorInput::I64(input);
 
@@ -127,49 +136,57 @@ pub fn create_tensor_and_run_model_pipeline(input: Vec<i64>) -> Result<Vec<f32>,
     });
 
     for index in 0..num_models as u8 {
-        let call_result = model_sub_compute(index, input_tensor.clone(), input_shape.clone()).await;
+        let call_result = model_sub_compute(index, input_tensor, input_shape);
 
         match call_result {
-            ModelInferenceResult::Ok(new_output, new_input_shape) => {
+            Ok((new_output, new_input_shape)) => {
                 input_shape = new_input_shape;
                 input_tensor = TensorInput::F32(new_output);
             }
-            ModelInferenceResult::Err(e) => {
-                return Err(format!("No Data in Result: {}", e));
+            Err(e) => {
+                return ModelInferenceResult::Err(format!("Model computation failed: {}", e));
             }
         }
     }
 
     if let TensorInput::F32(output) = input_tensor {
-        Ok(output)
+        ModelInferenceResult::Ok(output)
     } else {
-        Err("Final tensor is not of type f32".to_string())
+        ModelInferenceResult::Err("Final tensor is not of type f32".to_string())
     }
 }
 
 
 
 #[ic_cdk::query]
-fn model_sub_compute(index: u8, input: TensorInput, input_shape: Vec<usize>) -> ModelInferenceResult {
+fn model_sub_compute(index: u8, input: TensorInput, input_shape: Vec<usize>) -> Result<(Vec<f32>, Vec<usize>), String> {
     let input_tensor = match input {
-        TensorInput::F32(data) => match Array::from_shape_vec(input_shape, data) {
+        TensorInput::F32(data) => match tract_ndarray::Array::from_shape_vec(input_shape.clone(), data.clone()) {
             Ok(array) => array.into_tensor(),
-            Err(_) => return ModelInferenceResult::Err("Failed to create tensor from shape and values".to_string()),
+            Err(_) => return Err("Failed to create tensor from shape and values".to_string()),
         },
-        TensorInput::I64(data) => match Array::from_shape_vec(input_shape, data) {
+        TensorInput::I64(data) => match tract_ndarray::Array::from_shape_vec(input_shape.clone(), data.clone()) {
             Ok(array) => array.into_tensor(),
-            Err(_) => return ModelInferenceResult::Err("Failed to create tensor from shape and values".to_string()),
+            Err(_) => return Err("Failed to create tensor from shape and values".to_string()),
         },
     };
 
     let call_result = MODEL_PIPELINE.with(|pipeline_ref| {
-        let pipeline = pipeline_ref.borrow();
-        let model = pipeline.as_ref().ok_or_else(|| "Model pipeline is not initialized".to_string())?;
-        model.run_model_at_index(index, input_tensor)
+        pipeline_ref
+            .borrow()
+            .as_ref()
+            .ok_or_else(|| "Model pipeline is not initialized".to_string())
+            .and_then(|model_pipeline| {
+                model_pipeline
+                    .run_model_at_index(index, input_tensor)
+                    .map_err(|e| format!("Model computation failed: {}", e))
+            })
     });
 
     match call_result {
-        Ok((output, _)) => ModelInferenceResult::Ok(output),
-        Err(e) => ModelInferenceResult::Err(format!("Model computation failed: {}", e)),
+        Ok((output, output_shape)) => Ok((output, output_shape)),
+        Err(e) => Err(e),
     }
 }
+
+
