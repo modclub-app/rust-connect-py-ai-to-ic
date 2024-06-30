@@ -1,61 +1,147 @@
-# `wasi_ic_ai_single`
+# single_call
 
-Welcome to your new `wasi_ic_ai_single` project and to the Internet Computer development community. By default, creating a new project adds this README and some template files to your project directory. You can edit these template files to customize your project and to include your own code to speed up the development cycle.
+## Usage
 
-To get started, you might want to explore the project directory structure and the default configuration file. Working with this project in your development environment will not affect any production deployment or identity tokens.
+Once the setup is complete, you can proceed with the following steps to build, deploy, and run your project.
 
-To learn more before you start working with `wasi_ic_ai_single`, see the following documentation available online:
+1. Start the Internet Computer network locally in the background:
+   ```bash
+   dfx start --background
+   ```
+2. Deploy your project using `dfx`:
+   ```bash
+   dfx deploy
+   ```
+3. Use the Cargo command to run specific tasks, such as uploading model chunks. Replace the demo models `[gpt2_embedding.onnx]` with your actual model file names:
+   ```bash
+   cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml single_call_backend upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] 0
+   ```
+4. **Model Preparation**: Follow the commands to prepare the model for use:
 
-- [Quick Start](https://internetcomputer.org/docs/current/developer-docs/setup/deploy-locally)
-- [SDK Developer Tools](https://internetcomputer.org/docs/current/developer-docs/setup/install)
-- [Rust Canister Development Guide](https://internetcomputer.org/docs/current/developer-docs/backend/rust/)
-- [ic-cdk](https://docs.rs/ic-cdk)
-- [ic-cdk-macros](https://docs.rs/ic-cdk-macros)
-- [Candid Introduction](https://internetcomputer.org/docs/current/developer-docs/backend/candid/)
+   ```plaintext
+   setup_model: () → (opt text);
+   ```
 
-If you want to start working on your project right away, you might want to try the following commands:
+## Demo Instructions
 
-```bash
-cd single_call/
-dfx help
-dfx canister --help
-```
+These instructions guide you through running a demonstration of our application, which illustrates using the Python Transformers library, executing a Python script for model partitioning, loading the model into a canister, and interacting with the backend Canister API.
 
-## Running the project locally
+### Prerequisites
 
-If you want to test your project locally, you can use the following commands:
+- Python
+- Cargo (for Rust projects)
 
-```bash
-# Starts the replica, running in the background
-dfx start --background
+### Step 1: Install Dependencies
 
-# Deploys your canisters to the replica and generates your candid interface
-dfx deploy
-```
+- **Python Transformers Library**: The project uses the Transformers library for model management.
+  ```bash
+  pip install transformers
+  ```
 
-Once the job completes, your application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
+- **NodeJS Dependencies for the Frontend**:
+  ```bash
+  npm install --save-dev webpack webpack-cli
+  sudo apt-get install wabt
+  sudo apt-get install binaryen
+  ```
 
-If you have made changes to your backend canister, you can generate a new candid interface with
+### Step 2: Install WASI SDK 21
 
-```bash
-npm run generate
-```
+1. Download wasi-sdk-21.0 from [WASI SDK Releases](https://github.com/WebAssembly/wasi-sdk/releases/tag/wasi-sdk-21).
+2. Export `CC_wasm32_wasi` in your shell such that it points to WASI clang and sysroot. Example:
+   ```bash
+   export CC_wasm32_wasi="/path/to/wasi-sdk-21.0/bin/clang --sysroot=/path/to/wasi-sdk-21.0/share/wasi-sysroot"
+   ```
 
-at any time. This is recommended before starting the frontend development server, and will be run automatically any time you run `dfx deploy`.
+### Step 3: Install wasi2ic
 
-If you are making frontend changes, you can start a development server with
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/wasm-forge/wasi2ic
+   ```
+2. Enter the `wasi2ic` folder.
+3. Compile the project with:
+   ```bash
+   cargo build
+   ```
+   Alternatively, use:
+   ```bash
+   cargo install --path .
+   ```
+4. Ensure the `wasi2ic` binary is in your `$PATH`.
 
-```bash
-npm start
-```
+### Step 4: Partition the GPT-2 Model
 
-Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
+- Run the script to partition the GPT-2 model, preparing it for backend use:
+  ```bash
+  python3 python/GPT2_max_partition_model_pool.py
+  ```
 
-### Note on frontend environment variables
 
-If you are hosting frontend code somewhere without using DFX, you may need to make one of the following adjustments to ensure your project does not fetch the root key in production:
+### Step 5: Build and Deploy
 
-- set`DFX_NETWORK` to `ic` if you are using Webpack
-- use your own preferred method to replace `process.env.DFX_NETWORK` in the autogenerated declarations
-  - Setting `canisters -> {asset_canister_id} -> declarations -> env_override to a string` in `dfx.json` will replace `process.env.DFX_NETWORK` with the string in the autogenerated declarations
-- Write your own `createActor` constructor
+1. Start the Internet Computer network locally in the background:
+   ```bash
+   dfx start --background
+   ```
+2. Deploy your project using `dfx`:
+   ```bash
+   dfx deploy
+   ```
+
+### Step 6: Load the Model into the Backend
+
+1. **Model Upload**: Navigate to the canister scripts directory and perform the following:
+
+   - For local deployment:
+     ```bash
+     cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml single_call_backend upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] 0
+     ```
+
+   - For Internet Computer mainnet deployment:
+     ```bash
+     cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml <canister id> upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] 0 ic
+     ```
+
+   - If an upload is interrupted, query the last successful upload with:
+     ```plaintext
+     "upload_wasm_ref_cell_length": () -> (nat64) query;
+     ```
+     And resume uploading using the result:
+     ```bash
+     cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml single_call_backend upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] <result number>
+     ```
+
+2. **Model Preparation**: Follow the commands to prepare the model for use:
+   ```plaintext
+   setup_model: () → (opt text);
+   ```
+
+### Step 7: Interact with the Backend Canister API
+
+- Access the backend Canister API at the given endpoint for testing:
+  ```plaintext
+  model_inference: (vec int64) → (vec float32) composite_query
+  ```
+
+### Step 8: Test the API
+
+- Demonstrate the model's functionality with a call in command line such as `dfx canister call wasi_ic_ai_sequence_backend model_inference '(vec {1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13})'`
+
+### Additional Setup for wasm-opt
+
+- Install `wasm-opt`:
+  ```bash
+  cargo install wasm-opt
+  ```
+
+### Additional Notes on Using wasi2ic
+
+- To convert a WASI-dependent Wasm module to run on the Internet Computer:
+  ```bash
+  wasi2ic <input-wasm-file> <output_wasm_file>
+  ```
+- Add the polyfill dependency to your project:
+  ```bash
+  cargo add --git https://github.com/wasm-forge/ic-wasi-polyfill
+  ```
