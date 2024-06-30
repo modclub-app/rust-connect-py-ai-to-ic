@@ -24,8 +24,8 @@ thread_local! {
 
 
 #[ic_cdk::update]
-fn model_inference(numbers: Vec<i64>) -> ModelInferenceResult {
-    create_tensor_and_run_model_pipeline(numbers) //.await
+async fn model_inference(numbers: Vec<i64>) -> ModelInferenceResult {
+    create_tensor_and_run_model_pipeline(numbers).await
 }
 
 

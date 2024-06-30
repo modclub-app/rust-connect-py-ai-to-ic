@@ -3,17 +3,6 @@ type ModelInferenceResult = variant {
     Err: text;
 };
 
-type ResultRecord = record {
-    outputs: vec float32;
-    shapes: vec nat64;
-};
-
-type ModelInferenceMid = variant {
-    Ok: ResultRecord;
-    Err: text;
-};
-
-
 type TensorInput = variant {
     F32: vec float32;
     I64: vec int64;
@@ -21,7 +10,7 @@ type TensorInput = variant {
 
 service : {
     "model_inference": (vec int64) -> (ModelInferenceResult);
-    "model_sub_compute": (nat8, TensorInput, vec nat64)  -> (ModelInferenceMid) query;
+    "model_sub_compute": (nat8, TensorInput, vec nat64)  -> (vec float32, vec nat64) query;
     "setup_model": () -> (opt text);
     "upload_model_bytes_chunks": (vec nat8) -> ();
     "upload_wasm_ref_cell_length": () -> (nat64) query;
