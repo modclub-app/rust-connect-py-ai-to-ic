@@ -136,13 +136,15 @@ pub async fn create_tensor_and_run_model_pipeline(input: Vec<i64>) -> ModelInfer
     });
 
     for index in 0..num_models as u8 {
-        ic_cdk::println!("Calling model_sub_compute with index: {}, input_tensor: {:?}, input_shape: {:?}", index, input_tensor, input_shape);
+        //ic_cdk::println!("Calling model_sub_compute with index: {}, input_tensor: {:?}, input_shape: {:?}", index, input_tensor, input_shape);
+        ic_cdk::println!("Calling model_sub_compute with index: {}, input_shape: {:?}", index, input_shape);
 
         let call_result: Result<(Vec<f32>, Vec<usize>), _> = ic_cdk::call(ic_cdk::api::id(), "model_sub_compute", (index, input_tensor.clone(), input_shape.clone())).await;
 
         match call_result {
             Ok((new_output, new_input_shape)) => {
-                ic_cdk::println!("Call succeeded. new_output: {:?}, new_input_shape: {:?}", new_output, new_input_shape);
+                //ic_cdk::println!("Call succeeded. new_output: {:?}, new_input_shape: {:?}", new_output, new_input_shape);
+                ic_cdk::println!("Call succeeded. new_input_shape: {:?}", new_input_shape);
                 input_shape = new_input_shape;
                 input_tensor = TensorInput::F32(new_output);
             }
@@ -162,7 +164,8 @@ pub async fn create_tensor_and_run_model_pipeline(input: Vec<i64>) -> ModelInfer
 
 #[ic_cdk::query]
 fn model_sub_compute(index: u8, input: TensorInput, input_shape: Vec<usize>) -> (Vec<f32>, Vec<usize>) {
-    ic_cdk::println!("model_sub_compute called with index: {}, input: {:?}, input_shape: {:?}", index, input, input_shape);
+    //ic_cdk::println!("model_sub_compute called with index: {}, input: {:?}, input_shape: {:?}", index, input, input_shape);
+    ic_cdk::println!("model_sub_compute called with index: {}, input_shape: {:?}", index, input_shape);
 
     let input_tensor = match input {
         TensorInput::F32(data) => {
@@ -191,7 +194,7 @@ fn model_sub_compute(index: u8, input: TensorInput, input_shape: Vec<usize>) -> 
         )
     });
 
-    ic_cdk::println!("model_sub_compute result: {:?}", call_result);
+    //ic_cdk::println!("model_sub_compute result: {:?}", call_result);
     call_result
 }
 
