@@ -1,5 +1,0 @@
-[workspace]
-members = [
-    "src/parallel_query_single_canister_demo_backend"
-]
-resolver = "2"

@@ -1,0 +1,21 @@
+{
+  "canisters": {
+    "single_call_backend": {
+      "candid": "src/single_call_backend/single_call_backend.did",
+      "package": "wasi_ic_ai_single_backend",
+      "type": "custom",
+      "wasm": "./target/wasm32-wasi/release/single_call_backend-ic.wasm",
+      "build": [ "bash build.sh" ],
+      "shrink": true,
+      "gzip": true
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

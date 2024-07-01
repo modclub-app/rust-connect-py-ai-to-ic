@@ -1,0 +1,21 @@
+{
+  "canisters": {
+    "sequenced_calls_backend": {
+      "candid": "src/sequenced_calls_backend/sequenced_calls_backend.did",
+      "package": "sequenced_calls_backend",
+      "type": "custom",
+      "wasm": "./target/wasm32-wasi/release/sequenced_calls_backend-ic.wasm",
+      "build": [ "bash build.sh" ],
+      "shrink": true,
+      "gzip": true
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

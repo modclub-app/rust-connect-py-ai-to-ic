@@ -1,0 +1,20 @@
+type ModelInferenceResult = variant {
+    Ok: vec float32;
+    Err: text;
+};
+
+type TensorInput = variant {
+    F32: vec float32;
+    I64: vec int64;
+};
+
+service : {
+    "model_inference": (vec int64) -> (ModelInferenceResult);
+    "model_sub_compute": (nat8, TensorInput, vec nat64)  -> (vec float32, vec nat64) query;
+    "setup_model": () -> (opt text);
+    "upload_model_bytes_chunks": (vec nat8) -> ();
+    "upload_wasm_ref_cell_length": () -> (nat64) query;
+    "upload_wasm_ref_cell_clear": () -> ();
+    "pipeline_init": () -> ();
+    "pipeline_clear": () -> ();
+}
