@@ -51,9 +51,9 @@ class GPT2Wrapper(torch.nn.Module):
         self.model = model
 
     def forward(self, input_ids, attention_mask, past_key_values):
-        print(past_key_values.sum())
+        #print(past_key_values.sum())
         #if torch.any(past_key_values):
-        if torch.abs(past_key_values.sum()) > 0:
+        if past_key_values is not None:
             # Reshape past_key_values from (num_layers * 2, batch_size, num_heads, seq_length, head_dim)
             num_layers = past_key_values.shape[0] // 2
             past_key_values = tuple(
@@ -80,7 +80,7 @@ wrapper = GPT2Wrapper(model)
 wrapper.freeze_parameters()
 
 with torch.no_grad():
-    logits, past_key_values = wrapper(input_ids, attention_mask, torch.zeros(2,2))
+    logits, past_key_values = wrapper(input_ids, attention_mask)
     print("First pass:")
     print("input_ids:", input_ids.shape)
     print("attention_mask:", attention_mask.shape)
@@ -195,7 +195,7 @@ print(f"Logits: {logits_ort.shape}")
 print(f"Past Key Values: {past_key_values_ort.shape}")
 
 
-
+''''''
 #import numpy as np
 past_key_values_zero = torch.zeros((num_layers * 2, batch_size, num_heads, seq_length, head_dim))
 onnx_inputs = {
@@ -213,3 +213,23 @@ print(f"Logits: {logits_ort.shape}")
 print(f"Past Key Values: {past_key_values_ort.shape}")
 
 #"""
+
+
+# Special token used by GPT-2
+start_token = "<|endoftext|>" #50256
+
+
+# Encode the start token
+input_ids = tokenizer.encode(start_token, return_tensors="pt")
+attention = torch.ones(input_ids.shape)
+# Generate text
+with torch.no_grad():
+    #output = model(input_ids)
+    outputs = wrapper(input_ids, attention, None)
+# Extract past_key_values
+past_key_values = outputs[1]
+
+
+import numpy as np
+# Save the serialized past_key_values to a file
+np.save('onnx_model/end_of_text.npy', past_key_values.cpu().numpy())
