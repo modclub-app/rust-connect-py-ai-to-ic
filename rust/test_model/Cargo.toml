@@ -11,4 +11,4 @@ edition = "2021"
 [dependencies]
 tract-onnx = { git = "https://github.com/sonos/tract", rev = "2a2914ac29390cc08963301c9f3d437b52dd321a" }
 anyhow = "1.0"
-
+#smallvec = "1.13.2"
