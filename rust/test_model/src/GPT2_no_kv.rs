@@ -1,20 +1,20 @@
 use tract_onnx::prelude::*;
-use tract_ndarray::{ArrayViewD, Axis};
+use tract_ndarray::ArrayViewD;
+use crate::tract_ndarray::Axis;
 
 fn main() -> TractResult<()> {
     // Load the ONNX model
     let model = tract_onnx::onnx()
-        .model_for_path("../../python/onnx_model/gpt2_with_kv_in.onnx")?
+        .model_for_path("../../python/onnx_model/gpt2_without_kv_caching.onnx")?
         .into_optimized()?
         .into_runnable()?;
 
     // Initialize input tokens and attention mask
     let mut input_ids: Vec<i64> = vec![122, 3064]; // Use appropriate initial token
     let mut attention_mask: Vec<f32> = vec![1.0, 1.0];
-    let mut past_key_values: Option<Vec<Tensor>> = None;
 
     // Loop for text generation
-    for j in 0..3 { // Example: 3 iterations
+    for j in 0..3 { // Example: 10 iterations
         println!(
             "Iteration: {}, Input IDs Length: {}, Attention Mask Length: {}",
             j,
@@ -29,12 +29,7 @@ fn main() -> TractResult<()> {
         println!("Input IDs Tensor: {:?}", input_ids_tensor);
         println!("Attention Mask Tensor: {:?}", attention_mask_tensor);
 
-        let mut inputs = tvec!(input_ids_tensor.into(), attention_mask_tensor.into());
-
-        // Add past key values to the inputs if they exist
-        if let Some(ref pkv) = past_key_values {
-            inputs.extend(pkv.iter().cloned().map(|v| v.into()));
-        }
+        let inputs = tvec!(input_ids_tensor.into(), attention_mask_tensor.into());
 
         // Run the inference
         let outputs = match model.run(inputs) {
@@ -45,20 +40,12 @@ fn main() -> TractResult<()> {
             }
         };
 
-        // Extract logits and past_key_values
+        // Extract logits and get the next token
         let logits = outputs[0].to_array_view::<f32>()?;
-        past_key_values = Some(outputs.iter().skip(1).map(|o| o.clone().into_tensor()).collect());
-
-        // Get the next token
         let next_token = argmax(logits)?;
 
         // Print the next token for debugging
         println!("Next token: {}", next_token);
-
-        // Print the shape of past_key_values for debugging
-        if let Some(ref pkv) = past_key_values {
-            println!("Past Key Values Shape: {:?}", pkv[0].shape());
-        }
 
         // Append the next token and update the attention mask
         input_ids.push(next_token);
