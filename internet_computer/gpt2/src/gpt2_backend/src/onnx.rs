@@ -35,14 +35,14 @@ fn setup_model() -> Result<(), String> {
     setup().map_err(|err| format!("Failed to setup model: {}", err))
 }
 
-#[ic_cdk::query]
-fn model_inference(numbers: Vec<i64>) -> Result<Vec<i64>, String> {
-    create_tensor_and_run_model(numbers).map_err(|err| err.to_string())
+#[ic_cdk::update]
+fn model_inference(max_tokens: u8, numbers: Vec<i64>) -> Result<Vec<i64>, String> {
+    create_tensor_and_run_model(max_tokens, numbers).map_err(|err| err.to_string())
 }
 
 
 /// Runs the model on the given token_ids and returns generated tokens.
-pub fn create_tensor_and_run_model(token_ids: Vec<i64>) -> Result<Vec<i64>, anyhow::Error> {
+pub fn create_tensor_and_run_model(max_tokens: u8, token_ids: Vec<i64>) -> Result<Vec<i64>, anyhow::Error> {
     MODEL.with(|model| {
         let model = model.borrow();  // Borrow the contents of the RefCell
         let model = model.as_ref().unwrap();  // Ensure the model is initialized
@@ -53,23 +53,24 @@ pub fn create_tensor_and_run_model(token_ids: Vec<i64>) -> Result<Vec<i64>, anyh
         let mut attention_mask: Vec<i64> = vec![1; input_ids.len() + 1];
         let mut output_ids: Vec<i64> = Vec::new();
 
-        for j in 0..3 {
-            ic_cdk::println!(
-                "Iteration: {}, Input IDs Length: {}, Attention Mask Length: {}",
-                j,
-                input_ids.len(),
-                attention_mask.len()
-            );
+        //for j in 0..max_tokens {
+        for _ in 0..max_tokens {
+            //ic_cdk::println!(
+            //    "Iteration: {}, Input IDs Length: {}, Attention Mask Length: {}",
+            //    j,
+            //    input_ids.len(),
+            //    attention_mask.len()
+            //);
 
             let input_ids_tensor = create_tensor_i64(&input_ids)?;
             let attention_mask_tensor = create_tensor_i64(&attention_mask)?;
 
             let inputs: TVec<TValue> = tvec!(input_ids_tensor.into(), attention_mask_tensor.into(), past_key_values_tensor.clone().into());
 
-            for (i, input) in inputs.iter().enumerate() {
-                ic_cdk::println!("Input {}: {:?}", i, input.shape());
-                ic_cdk::println!("Input {} DType: {:?}", i, input.datum_type());
-            }
+            //for (i, input) in inputs.iter().enumerate() {
+            //    ic_cdk::println!("Input {}: {:?}", i, input.shape());
+            //    ic_cdk::println!("Input {} DType: {:?}", i, input.datum_type());
+            //}
 
             let outputs = model.run(inputs)?;
 
@@ -79,14 +80,15 @@ pub fn create_tensor_and_run_model(token_ids: Vec<i64>) -> Result<Vec<i64>, anyh
             let next_token = argmax(logits)?;
 
             ic_cdk::println!("Next token: {}", next_token);
+            if next_token == 50256_i64 { break; }
 
             input_ids = vec![next_token];
             attention_mask.push(1);
             output_ids.push(next_token);
         }
 
-        ic_cdk::println!("Final input_ids: {:?}", input_ids);
-        ic_cdk::println!("Final attention_mask: {:?}", attention_mask);
+        //ic_cdk::println!("Final input_ids: {:?}", input_ids);
+        //ic_cdk::println!("Final attention_mask: {:?}", attention_mask);
 
         Ok(output_ids)
     })

@@ -7,7 +7,7 @@ type ModelInferenceResult = variant {
 service : {
     "insert_sample_data": () -> ();
 
-    "model_inference": (vec int64) -> (ModelInferenceResult) query;
+    "model_inference": (nat8, vec int64) -> (ModelInferenceResult);
     "setup_model": () -> (opt text);
 
     "upload_model_bytes_chunks": (vec nat8) -> ();
