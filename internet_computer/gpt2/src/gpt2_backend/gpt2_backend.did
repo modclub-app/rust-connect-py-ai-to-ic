@@ -1,0 +1,18 @@
+type ModelInferenceResult = variant {
+    Ok: vec float32;
+    Err: text;
+};
+
+
+service : {
+    "insert_sample_data": () -> ();
+
+    "model_inference": (vec int64) -> (ModelInferenceResult) query;
+    "setup_model": () -> (opt text);
+
+    "upload_model_bytes_chunks": (vec nat8) -> ();
+    "upload_wasm_ref_cell_to_stable": () -> ();
+    "upload_wasm_ref_cell_from_stable": () -> ();
+    "upload_wasm_ref_cell_length": () -> (nat64) query;
+    "upload_wasm_ref_cell_clear": () -> ();
+}
