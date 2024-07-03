@@ -2,9 +2,10 @@ use std::cell::RefCell;
 
 use prost::Message;
 use tract_onnx::prelude::*;
+use tract_ndarray::{ArrayD, IxDyn, ArrayViewD};
+
 use anyhow::anyhow;
 use crate::upload_utils::call_model_bytes;
-
 
 type Model = SimplePlan<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>;
 
@@ -12,12 +13,8 @@ thread_local! {
     static MODEL: RefCell<Option<Model>> = RefCell::new(None);
 }
 
-//const REDACTOR_NET: &'static [u8] = include_bytes!("../assets/simplest_best_dynamic_model.onnx");
-//const REDACTOR_NET: &'static [u8] = include_bytes!("../assets/mobilenetv2-7.onnx");
-
-/// Constructs a runnable model from the serialized ONNX model in `RedactorNET`.
+/// Constructs a runnable model from the serialized ONNX model in `REDACTOR_NET`.
 pub fn setup() -> TractResult<()> {
-    //let bytes = bytes::Bytes::from_static(REDACTOR_NET);
     let bytes = match call_model_bytes() {
         Ok(value) => value,
         Err(_) => bytes::Bytes::new(),  // Return empty bytes in case of error
@@ -27,52 +24,93 @@ pub fn setup() -> TractResult<()> {
         .model_for_proto_model(&proto)?
         .into_optimized()?
         .into_runnable()?;
-    MODEL.with_borrow_mut(|m| {
-        *m = Some(model);
+    MODEL.with(|m| {
+        *m.borrow_mut() = Some(model);
     });
     Ok(())
 }
 
-
 #[ic_cdk::update]
 fn setup_model() -> Result<(), String> {
-    match setup() {
-        Ok(_) => Ok(()),
-        Err(err) => Err(format!("Failed to setup model: {}", err)),
-    }
+    setup().map_err(|err| format!("Failed to setup model: {}", err))
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// Runs the model on the given image and returns top three labels.
-//pub fn classify(image: Vec<u8>) -> Result<Vec<Classification>, anyhow::Error> {
-pub fn create_tensor_and_run_model(token_ids: Vec<i64>) -> Result<Vec<f32>, anyhow::Error> {
+#[ic_cdk::query]
+fn model_inference(numbers: Vec<i64>) -> Result<Vec<i64>, String> {
+    create_tensor_and_run_model(numbers).map_err(|err| err.to_string())
+}
 
-    MODEL.with_borrow(|model| {
-        let model = model.as_ref().unwrap();
 
-        let input_shape = vec![1, token_ids.len()];
-        //let input_shape = vec![token_ids.len()];
+/// Runs the model on the given token_ids and returns generated tokens.
+pub fn create_tensor_and_run_model(token_ids: Vec<i64>) -> Result<Vec<i64>, anyhow::Error> {
+    MODEL.with(|model| {
+        let model = model.borrow();  // Borrow the contents of the RefCell
+        let model = model.as_ref().unwrap();  // Ensure the model is initialized
 
-        let tensor = match tract_ndarray::Array::from_shape_vec(input_shape, token_ids) {
-            Ok(array) => array.into_tensor(),
-            Err(_) => return Err(anyhow!("Failed to create tensor from shape and values")),
-        };
+        let mut past_key_values_tensor = create_empty_past_key_values(24, 1, 12, 1, 64)?;
 
-        //let tensor = tract_ndarray::Array4::from_shape_fn((1, 3, 224, 224), |(_, c, y, x)| {
-        //    (image[(x as u32, y as u32)][c] as f32 / 255.0 - MEAN[c]) / STD[c]
-        //});
+        let mut input_ids = token_ids;
+        let mut attention_mask: Vec<i64> = vec![1; input_ids.len() + 1];
+        let mut output_ids: Vec<i64> = Vec::new();
 
-        let result = model.run(tvec!(Tensor::from(tensor).into()))?;
+        for j in 0..3 {
+            ic_cdk::println!(
+                "Iteration: {}, Input IDs Length: {}, Attention Mask Length: {}",
+                j,
+                input_ids.len(),
+                attention_mask.len()
+            );
 
-        let scores: Vec<f32> = result[0]
-            .to_array_view::<f32>()?
-            .iter()
-            .cloned()
-            .collect();
+            let input_ids_tensor = create_tensor_i64(&input_ids)?;
+            let attention_mask_tensor = create_tensor_i64(&attention_mask)?;
 
-        Ok(scores)
+            let inputs: TVec<TValue> = tvec!(input_ids_tensor.into(), attention_mask_tensor.into(), past_key_values_tensor.clone().into());
+
+            for (i, input) in inputs.iter().enumerate() {
+                ic_cdk::println!("Input {}: {:?}", i, input.shape());
+                ic_cdk::println!("Input {} DType: {:?}", i, input.datum_type());
+            }
+
+            let outputs = model.run(inputs)?;
+
+            let logits = outputs[0].to_array_view::<f32>()?;
+            past_key_values_tensor = outputs[1].clone().into_tensor();
+
+            let next_token = argmax(logits)?;
+
+            ic_cdk::println!("Next token: {}", next_token);
+
+            input_ids = vec![next_token];
+            attention_mask.push(1);
+            output_ids.push(next_token);
+        }
+
+        ic_cdk::println!("Final input_ids: {:?}", input_ids);
+        ic_cdk::println!("Final attention_mask: {:?}", attention_mask);
+
+        Ok(output_ids)
     })
 }
 
+fn create_tensor_i64(data: &[i64]) -> TractResult<Tensor> {
+    let shape = [1, data.len()];
+    let array = ArrayD::from_shape_vec(IxDyn(&shape), data.to_vec())
+        .map_err(|_| anyhow::anyhow!("Failed to create tensor from shape and values"))?;
+    Ok(array.into_tensor())
+}
 
+fn argmax(logits: ArrayViewD<f32>) -> TractResult<i64> {
+    logits
+        .iter()
+        .enumerate()
+        .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+        .map(|(idx, _)| idx as i64)
+        .ok_or(anyhow!("Failed to determine argmax"))
+}
 
+fn create_empty_past_key_values(num_layers: usize, batch_size: usize, num_heads: usize, seq_length: usize, head_dim: usize) -> TractResult<Tensor> {
+    let shape = [num_layers, batch_size, num_heads, seq_length, head_dim];
+    let array = tract_ndarray::Array::from_shape_vec(IxDyn(&shape), vec![0.0_f32; num_layers * batch_size * num_heads * seq_length * head_dim])
+        .map_err(|_| anyhow::anyhow!("Failed to create tensor from shape and values"))?;
+    Ok(array.into_tensor())
+}

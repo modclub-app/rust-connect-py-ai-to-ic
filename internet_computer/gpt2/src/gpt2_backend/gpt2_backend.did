@@ -1,5 +1,5 @@
 type ModelInferenceResult = variant {
-    Ok: vec float32;
+    Ok: vec int64;
     Err: text;
 };
 

@@ -25,6 +25,8 @@ fn upload_wasm_ref_cell_to_stable() {
         let data = cell.borrow().clone();
         MAP.with(|p| {
             let mut map = p.borrow_mut();
+            //map.clear_new(0_u8);
+            map.remove(&0_u8);
             map.insert(0_u8, data);
         });
     });

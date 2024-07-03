@@ -48,10 +48,3 @@ fn post_upgrade() {
     });
 }
 
-#[ic_cdk::query]
-fn model_inference(numbers: Vec<i64>) -> Result<Vec<f32>, String> {
-    match onnx::create_tensor_and_run_model(numbers) {
-        Ok(result) => Ok(result),
-        Err(err) => Err(err.to_string()),
-    }
-}
