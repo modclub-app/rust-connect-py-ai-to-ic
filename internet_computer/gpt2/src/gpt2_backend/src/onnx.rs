@@ -47,37 +47,37 @@ pub fn create_tensor_and_run_model(max_tokens: u8, token_ids: Vec<i64>) -> Resul
         let model = model.borrow();  // Borrow the contents of the RefCell
         let model = model.as_ref().unwrap();  // Ensure the model is initialized
 
-        let mut past_key_values_tensor = create_empty_past_key_values(24, 1, 12, 1, 64)?;
+        let mut past_key_values_tensor = create_empty_past_key_values(12, 2, 1, 12, 1, 64)?;
 
         let mut input_ids = token_ids;
         let mut attention_mask: Vec<i64> = vec![1; input_ids.len() + 1];
         let mut output_ids: Vec<i64> = Vec::new();
 
-        //for j in 0..max_tokens {
         for _ in 0..max_tokens {
-            //ic_cdk::println!(
-            //    "Iteration: {}, Input IDs Length: {}, Attention Mask Length: {}",
-            //    j,
-            //    input_ids.len(),
-            //    attention_mask.len()
-            //);
+            ic_cdk::println!(
+                "Iteration: {}, Input IDs Length: {}, Attention Mask Length: {}",
+                _,
+                input_ids.len(),
+                attention_mask.len()
+            );
 
             let input_ids_tensor = create_tensor_i64(&input_ids)?;
             let attention_mask_tensor = create_tensor_i64(&attention_mask)?;
 
             let inputs: TVec<TValue> = tvec!(input_ids_tensor.into(), attention_mask_tensor.into(), past_key_values_tensor.clone().into());
 
-            //for (i, input) in inputs.iter().enumerate() {
-            //    ic_cdk::println!("Input {}: {:?}", i, input.shape());
-            //    ic_cdk::println!("Input {} DType: {:?}", i, input.datum_type());
-            //}
+            for (i, input) in inputs.iter().enumerate() {
+                ic_cdk::println!("Input {}: {:?}", i, input.shape());
+                ic_cdk::println!("Input {} DType: {:?}", i, input.datum_type());
+            }
 
             let outputs = model.run(inputs)?;
 
-            let logits = outputs[0].to_array_view::<f32>()?;
+            // Extract the next token from the model output
+            let next_token_tensor = outputs[0].to_array_view::<i64>()?;
+            let next_token = next_token_tensor[[0, 0]];
+            //let next_token:i64 = outputs[0];
             past_key_values_tensor = outputs[1].clone().into_tensor();
-
-            let next_token = argmax(logits)?;
 
             ic_cdk::println!("Next token: {}", next_token);
             if next_token == 50256_i64 { break; }
@@ -101,18 +101,11 @@ fn create_tensor_i64(data: &[i64]) -> TractResult<Tensor> {
     Ok(array.into_tensor())
 }
 
-fn argmax(logits: ArrayViewD<f32>) -> TractResult<i64> {
-    logits
-        .iter()
-        .enumerate()
-        .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
-        .map(|(idx, _)| idx as i64)
-        .ok_or(anyhow!("Failed to determine argmax"))
-}
+
 
 fn create_empty_past_key_values(num_layers: usize, batch_size: usize, num_heads: usize, seq_length: usize, head_dim: usize) -> TractResult<Tensor> {
-    let shape = [num_layers, batch_size, num_heads, seq_length, head_dim];
-    let array = tract_ndarray::Array::from_shape_vec(IxDyn(&shape), vec![0.0_f32; num_layers * batch_size * num_heads * seq_length * head_dim])
+    let shape = [num_layers, kv, batch_size, num_heads, seq_length, head_dim];
+    let array = tract_ndarray::Array::from_shape_vec(IxDyn(&shape), vec![0.0_f32; num_layers * kv * batch_size * num_heads * seq_length * head_dim])
         .map_err(|_| anyhow::anyhow!("Failed to create tensor from shape and values"))?;
     Ok(array.into_tensor())
 }

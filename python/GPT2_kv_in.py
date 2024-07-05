@@ -1,4 +1,6 @@
 #"""
+import copy
+
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 import torch
 
@@ -13,10 +15,14 @@ input_ids = inputs['input_ids']
 attention_mask = inputs['attention_mask']
 
 # Perform the initial model run to get past_key_values
-outputs = model(input_ids, attention_mask=attention_mask, use_cache=True)
+with torch.no_grad():
+    outputs = model(input_ids, attention_mask=attention_mask, use_cache=True)
 logits = outputs.logits
 print(logits.shape)
 past_key_values = outputs.past_key_values
+
+
+past_key_values_init = copy.deepcopy(past_key_values)
 
 print("Initial Logits:", logits.shape)
 print("Initial Past Key Values Shapes:", [pkv[0].shape for pkv in past_key_values])
@@ -30,9 +36,11 @@ new_input_ids = new_inputs['input_ids']
 extended_attention_mask = torch.cat(
     [attention_mask, torch.ones((attention_mask.size(0), new_input_ids.size(-1)), dtype=attention_mask.dtype)], dim=-1
 )
+extended_attention_mask_init = extended_attention_mask
 
 # Run the model with past_key_values and extended attention mask
-outputs = model(new_input_ids, attention_mask=extended_attention_mask, past_key_values=past_key_values, use_cache=True)
+with torch.no_grad():
+    outputs = model(new_input_ids, attention_mask=extended_attention_mask, past_key_values=past_key_values, use_cache=True)
 logits = outputs.logits
 print(logits.shape)
 past_key_values = outputs.past_key_values
@@ -45,30 +53,56 @@ for pkv in past_key_values:
         print("\t", pkvi.shape)
 
 
+
+##################################################################################################
+extended_attention_mask = copy.deepcopy(extended_attention_mask_init)
+past_key_values = copy.deepcopy(past_key_values_init)
+
+
+print(extended_attention_mask.shape)
+print(new_input_ids.shape)
+print(past_key_values[0][0].shape)
+next_input = copy.deepcopy(new_input_ids)
+
+output_ids = []
+# Run the model with past_key_values and extended attention mask
+for i in range(5):
+    with torch.no_grad():
+        outputs = model(next_input, attention_mask=extended_attention_mask, past_key_values=past_key_values, use_cache=True)
+    current_out = torch.argmax(outputs.logits[:, -1, :]).item()
+    output_ids.append( current_out )
+    next_input = torch.tensor([[current_out]])
+    past_key_values = outputs.past_key_values
+    extended_attention_mask = torch.cat([ extended_attention_mask, torch.ones((1,1)) ], dim=1)
+
+print('Output', output_ids)
+print(logits.shape)
+print(extended_attention_mask.shape)
+################################
+
 class GPT2Wrapper(torch.nn.Module):
     def __init__(self, model):
         super(GPT2Wrapper, self).__init__()
         self.model = model
 
     def forward(self, input_ids, attention_mask, past_key_values):
-        #print(past_key_values.sum())
-        #if torch.any(past_key_values):
-        if past_key_values is not None:
-            # Reshape past_key_values from (num_layers * 2, batch_size, num_heads, seq_length, head_dim)
-            num_layers = past_key_values.shape[0] // 2
+
+        # Reshape past_key_values from (num_layers * 2, batch_size, num_heads, seq_length, head_dim)
+        if torch.sum(torch.abs(past_key_values)) > 0:
+            num_layers = past_key_values.shape[0]
             past_key_values = tuple(
-                (past_key_values[i], past_key_values[i + num_layers])
+                (past_key_values[i][0], past_key_values[i][1])
                 for i in range(num_layers)
             )
             outputs = self.model(input_ids, attention_mask=attention_mask, past_key_values=past_key_values, use_cache=True)
         else:
-            outputs = self.model(input_ids, attention_mask=attention_mask)
-        logits = outputs.logits[:,-1,:]
-
+            outputs = self.model(input_ids, attention_mask=attention_mask, past_key_values=None, use_cache=True)
+        outputs_id = torch.argmax(outputs.logits[:,-1,:])#.item()
         # Flatten past_key_values to a single tensor for ONNX export
-        past_key_values_flat = torch.cat(
+        past_key_values_flat = torch.stack(
             [torch.cat([pk[0].unsqueeze(0), pk[1].unsqueeze(0)], dim=0) for pk in outputs.past_key_values], dim=0)
-        return logits, past_key_values_flat
+        #return logits, past_key_values_flat
+        return outputs_id, past_key_values_flat
 
     def freeze_parameters(self):
         for param in self.parameters():
@@ -79,15 +113,21 @@ class GPT2Wrapper(torch.nn.Module):
 wrapper = GPT2Wrapper(model)
 wrapper.freeze_parameters()
 
+next_input = torch.cat([input_ids, new_input_ids], dim=1)
+past_key_values = torch.zeros( torch.Size([12, 2, 1, 12, 1, 64]) )
+extended_attention_mask = copy.deepcopy(extended_attention_mask_init)
+
 with torch.no_grad():
-    logits, past_key_values = wrapper(input_ids, attention_mask)
+    output_id, past_key_values = wrapper(input_ids, attention_mask, past_key_values)
     print("First pass:")
+    print("output_id:", output_id)
     print("input_ids:", input_ids.shape)
     print("attention_mask:", attention_mask.shape)
     print("past_key_values:", past_key_values.shape)
 
-    logits, past_key_values_2 = wrapper(new_input_ids, extended_attention_mask, past_key_values)
+    output_id, past_key_values_2 = wrapper(new_input_ids, extended_attention_mask, past_key_values)
     print("Second pass:")
+    print("output_id:", output_id)
     print("new_input_ids:", new_input_ids.shape)
     print("extended_attention_mask:", extended_attention_mask.shape)
     print("past_key_values:", past_key_values.shape)
@@ -99,11 +139,13 @@ torch.onnx.export(
     (new_input_ids, extended_attention_mask, past_key_values),
     "onnx_model/gpt2_with_kv_in.onnx",
     input_names=["input_ids", "attention_mask", "past_key_values_input"],
-    output_names=["logits", "past_key_values_output"],
+    #output_names=["logits", "past_key_values_output"],
+    output_names=["output_id", "past_key_values_output"],
     dynamic_axes={
         "input_ids": {0: "batch_size", 1: "new_sequence"},
         "attention_mask": {0: "batch_size", 1: "new_and_last_sequence"},
-        "logits": {0: "batch_size"}, #, 1: "sequence"},
+        #"logits": {0: "batch_size"}, #, 1: "sequence"},
+        "output_id": {0: "batch_size"},
         "past_key_values_input": {1: "batch_size", 3: "last_sequence"},
         "past_key_values_output": {1: "batch_size", 3: "new_and_last_sequence"}
         #"past_key_values_input": {1: "batch_size", 2: "num_heads", 3: "sequence", 4: "head_dim"},
@@ -112,6 +154,7 @@ torch.onnx.export(
     opset_version=11
 )
 
+#"""
 import onnx
 import onnxruntime as ort
 
@@ -138,13 +181,13 @@ onnx_inputs = {
 outputs = ort_session.run(None, onnx_inputs)
 
 # Verify the outputs
-logits_ort = outputs[0]
+output_id_ort = outputs[0]
 past_key_values_ort = outputs[1]
-print(f"Logits: {logits_ort.shape}")
+print(f"Output ID: {output_id_ort}")
 print(f"Past Key Values: {past_key_values_ort.shape}")
 
-#"""
 
+"""
 import torch
 import onnx
 import onnxruntime as ort
@@ -195,7 +238,7 @@ print(f"Logits: {logits_ort.shape}")
 print(f"Past Key Values: {past_key_values_ort.shape}")
 
 
-''''''
+
 #import numpy as np
 past_key_values_zero = torch.zeros((num_layers * 2, batch_size, num_heads, seq_length, head_dim))
 onnx_inputs = {
@@ -214,7 +257,7 @@ print(f"Past Key Values: {past_key_values_ort.shape}")
 
 #"""
 
-
+'''
 # Special token used by GPT-2
 start_token = "<|endoftext|>" #50256
 
@@ -233,3 +276,4 @@ past_key_values = outputs[1]
 import numpy as np
 # Save the serialized past_key_values to a file
 np.save('onnx_model/end_of_text.npy', past_key_values.cpu().numpy())
+'''
