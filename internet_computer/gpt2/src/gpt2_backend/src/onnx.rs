@@ -47,7 +47,8 @@ pub fn create_tensor_and_run_model(max_tokens: u8, token_ids: Vec<i64>) -> Resul
         let model = model.borrow();  // Borrow the contents of the RefCell
         let model = model.as_ref().unwrap();  // Ensure the model is initialized
 
-        let mut past_key_values_tensor = create_empty_past_key_values(12, 2, 1, 12, 1, 64)?;
+        //let mut past_key_values_tensor = create_empty_past_key_values(12, 2, 1, 12, 1, 64)?;
+        let mut past_key_values_tensor = create_empty_past_key_values(24, 1, 12, 1, 64)?;
 
         let mut input_ids = token_ids;
         let mut attention_mask: Vec<i8> = vec![1; input_ids.len() + 1];
@@ -74,10 +75,12 @@ pub fn create_tensor_and_run_model(max_tokens: u8, token_ids: Vec<i64>) -> Resul
             */
             let outputs = model.run(inputs)?;
 
+            //let logits = outputs[0].to_array_view::<f32>()?;
+            //let next_token = argmax(logits)?;
             // Extract the next token from the model output
             let next_token_tensor = outputs[0].to_array_view::<i64>()?;
             let next_token = next_token_tensor[[0, 0]];
-            //let next_token:i64 = outputs[0];
+
             past_key_values_tensor = outputs[1].clone().into_tensor();
 
             ic_cdk::println!("Next token: {}", next_token);
@@ -109,12 +112,12 @@ fn create_tensor_i8(data: &[i8]) -> TractResult<Tensor> {
     Ok(array.into_tensor())
 }
 
-fn create_empty_past_key_values(num_layers: usize, kv: usize, batch_size: usize, num_heads: usize, seq_length: usize, head_dim: usize) -> TractResult<Tensor> {
-    let shape = [num_layers, kv, batch_size, num_heads, seq_length, head_dim];
-    let array = tract_ndarray::Array::from_shape_vec(IxDyn(&shape), vec![0.0_f32; num_layers * kv * batch_size * num_heads * seq_length * head_dim])
+
+fn create_empty_past_key_values(num_layers: usize, batch_size: usize, num_heads: usize, seq_length: usize, head_dim: usize) -> TractResult<Tensor> {
+    let shape = [num_layers, batch_size, num_heads, seq_length, head_dim];
+    let array = tract_ndarray::Array::from_shape_vec(IxDyn(&shape), vec![0.0_f32; num_layers * batch_size * num_heads * seq_length * head_dim])
         .map_err(|_| anyhow::anyhow!("Failed to create tensor from shape and values"))?;
     Ok(array.into_tensor())
 }
-
 
 

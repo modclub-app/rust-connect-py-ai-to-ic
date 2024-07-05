@@ -26,7 +26,7 @@ past_key_values_init = copy.deepcopy(past_key_values)
 #print("Initial Past Key Values Shapes:", [pkv[0].shape for pkv in past_key_values])
 
 # Prepare inputs for the second run
-new_input_text = " color?"
+new_input_text = " sport?\n"
 new_inputs = tokenizer(new_input_text, return_tensors='pt')
 new_input_ids = new_inputs['input_ids']
 
@@ -108,23 +108,23 @@ class GPT2Wrapper(torch.nn.Module):
     def __init__(self, model):
         super(GPT2Wrapper, self).__init__()
         self.model = model
+        self.num_layers = 12
 
     def forward(self, input_ids, attention_mask, past_key_values):
 
         # Reshape past_key_values from (num_layers * 2, batch_size, num_heads, seq_length, head_dim)
-        if torch.sum(torch.abs(past_key_values)) > 0:
-            num_layers = past_key_values.shape[0]
-            past_key_values = tuple(
-                (past_key_values[i][0], past_key_values[i][1])
-                for i in range(num_layers)
-            )
-            outputs = self.model(input_ids, attention_mask=attention_mask, past_key_values=past_key_values, use_cache=True)
-        else:
-            outputs = self.model(input_ids, attention_mask=attention_mask, past_key_values=None, use_cache=True)
+        past_key_values = tuple(
+            (past_key_values[i], past_key_values[i + 1])
+            for i in range(0, 2 * self.num_layers, 2)
+        )
+
+        outputs = self.model(input_ids, attention_mask=attention_mask, past_key_values=past_key_values, use_cache=True)
+        #else:
+        #    outputs = self.model(input_ids, attention_mask=attention_mask, past_key_values=None, use_cache=True)
         outputs_id = torch.argmax(outputs.logits[:,-1,:]).item()
         # Flatten past_key_values to a single tensor for ONNX export
-        past_key_values_flat = torch.stack(
-            [torch.cat([pk[0].unsqueeze(0), pk[1].unsqueeze(0)], dim=0) for pk in outputs.past_key_values], dim=0)
+        past_key_values_flat = torch.cat(
+            [torch.stack(pk, dim=0) for pk in outputs.past_key_values], dim=0)
         #return logits, past_key_values_flat
         return outputs_id, past_key_values_flat
 
@@ -140,14 +140,15 @@ wrapper.freeze_parameters()
 next_input = copy.deepcopy(new_input_ids)
 extended_attention_mask = copy.deepcopy(extended_attention_mask_init)
 past_key_values = copy.deepcopy(past_key_values_init)
-past_key_values = torch.stack(
-    [torch.cat([pk[0].unsqueeze(0), pk[1].unsqueeze(0)], dim=0) for pk in past_key_values], dim=0)
-print(past_key_values.shape)
+past_key_values_flat = torch.cat(
+    [torch.stack(pk, dim=0) for pk in past_key_values], dim=0)
+print(past_key_values_flat.shape)
+
 
 output_ids = []
 for i in range(15):
     with torch.no_grad():
-        current_out, past_key_values_flat = wrapper(next_input, extended_attention_mask, past_key_values)
+        current_out, past_key_values_flat = wrapper(next_input, extended_attention_mask, past_key_values_flat)
     output_ids.append(  current_out )
     #print('Output:', output_ids)
     next_input = torch.tensor([[current_out]])
@@ -169,27 +170,44 @@ print(f"KV Flattened Decoded Terms: {decoded_terms}")
 next_input = torch.cat([input_ids, new_input_ids], dim=1)
 extended_attention_mask = copy.deepcopy(extended_attention_mask_init)
 #extended_attention_mask = torch.cat([ extended_attention_mask, torch.ones((1,1)) ], dim=1)
-past_key_values = torch.zeros( torch.Size([12, 2, 1, 12, 1, 64]) )
+past_key_values_flat = torch.zeros( torch.Size([24, 1, 12, 1, 64]) )
+'''
+input_text = "<|endoftext|>"
+inputs = tokenizer(input_text, return_tensors='pt')
+eot = inputs['input_ids']
+with torch.no_grad():
+    outputs = model(eot, attention_mask=torch.ones((1,1), dtype=torch.int64), use_cache=True)
 
+past_key_values_flat = torch.cat(
+    [torch.stack(pk, dim=0) for pk in outputs.past_key_values], dim=0)
+'''
+
+#past_key_values_flat = torch.zeros( torch.Size([24, 12, 1, 64]) )
+#print(past_key_values.shape)
 
 output_ids = []
+
 with torch.no_grad():
-    current_out, past_key_values_flat = wrapper(next_input, extended_attention_mask, past_key_values)
+    current_out, past_key_values_flat = wrapper(next_input, torch.ones((1,next_input.shape[-1]+1), dtype=torch.int64), past_key_values_flat)
 output_ids.append(current_out)
 # print('Output:', output_ids)
+print(past_key_values_flat.shape)
+print(next_input.shape)
+
+#next_input = torch.tensor([[current_out]])
+#past_key_values = past_key_values_flat
+extended_attention_mask = torch.ones((1, next_input.shape[1]+2), dtype=torch.int64)
+print(extended_attention_mask.shape)
 next_input = torch.tensor([[current_out]])
-past_key_values = past_key_values_flat
-extended_attention_mask = torch.cat([extended_attention_mask, torch.ones((1, 1))], dim=1)
 
-
+new_input_ids = copy.deepcopy(next_input)
 for i in range(14):
     with torch.no_grad():
-        current_out, past_key_values_flat = wrapper(next_input, extended_attention_mask, past_key_values)
+        current_out, past_key_values_flat = wrapper(next_input, extended_attention_mask, past_key_values_flat)
     output_ids.append(  current_out )
     #print('Output:', output_ids)
     next_input = torch.tensor([[current_out]])
-    past_key_values = past_key_values_flat
-    extended_attention_mask = torch.cat([ extended_attention_mask, torch.ones((1,1)) ], dim=1)
+    extended_attention_mask = torch.cat([ extended_attention_mask, torch.ones((1,1), dtype=extended_attention_mask.dtype) ], dim=1)
 
 response = torch.tensor(output_ids).long()
 
