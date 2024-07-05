@@ -102,10 +102,12 @@ fn create_tensor_i64(data: &[i64]) -> TractResult<Tensor> {
 }
 
 
-
-fn create_empty_past_key_values(num_layers: usize, batch_size: usize, num_heads: usize, seq_length: usize, head_dim: usize) -> TractResult<Tensor> {
+fn create_empty_past_key_values(num_layers: usize, kv: usize, batch_size: usize, num_heads: usize, seq_length: usize, head_dim: usize) -> TractResult<Tensor> {
     let shape = [num_layers, kv, batch_size, num_heads, seq_length, head_dim];
     let array = tract_ndarray::Array::from_shape_vec(IxDyn(&shape), vec![0.0_f32; num_layers * kv * batch_size * num_heads * seq_length * head_dim])
         .map_err(|_| anyhow::anyhow!("Failed to create tensor from shape and values"))?;
     Ok(array.into_tensor())
 }
+
+
+

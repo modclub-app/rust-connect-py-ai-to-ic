@@ -10,11 +10,12 @@ fn main() -> TractResult<()> {
         .into_runnable()?;
 
     // Load the serialized past_key_values
-    let serialized_past_key_values: ArrayD<f32> = read_npy("../../python/onnx_model/end_of_text.npy")
-        .expect("Failed to read end_of_text.npy");
+    //let serialized_past_key_values: ArrayD<f32> = read_npy("../../python/onnx_model/end_of_text.npy")
+    //    .expect("Failed to read end_of_text.npy");
 
     // Convert past_key_values to Tensor
-    let mut past_key_values_tensor = serialized_past_key_values.into_tensor();
+    //let mut past_key_values_tensor = serialized_past_key_values.into_tensor();
+    let mut past_key_values_tensor = create_empty_past_key_values(12, 2, 1, 12, 1, 64)?;
 
     // Initialize input tokens and attention mask
     let mut input_ids: Vec<i64> = vec![122]; // Use appropriate initial token
@@ -64,12 +65,14 @@ fn main() -> TractResult<()> {
         };
 
         // Extract logits and past_key_values
-        let logits = outputs[0].to_array_view::<f32>()?;
+        //let logits = outputs[0].to_array_view::<f32>()?;
+
         past_key_values_tensor = outputs[1].clone().into_tensor();
 
         // Get the next token
-        let next_token = argmax(logits)?;
-
+        //let next_token = argmax(logits)?;
+        let next_token_tensor = outputs[0].to_array_view::<i64>()?;
+        let next_token = next_token_tensor[[0, 0]];
         // Print the next token for debugging
         println!("Next token: {}", next_token);
 
@@ -96,4 +99,11 @@ fn create_tensor_i64(data: &[i64]) -> TractResult<Tensor> {
 
 fn argmax(logits: ArrayViewD<f32>) -> TractResult<i64> {
     Ok(logits.iter().enumerate().max_by(|a, b| a.1.partial_cmp(b.1).unwrap()).unwrap().0 as i64)
+}
+
+fn create_empty_past_key_values(num_layers: usize, kv: usize, batch_size: usize, num_heads: usize, seq_length: usize, head_dim: usize) -> TractResult<Tensor> {
+    let shape = [num_layers, kv, batch_size, num_heads, seq_length, head_dim];
+    let array = tract_ndarray::Array::from_shape_vec(IxDyn(&shape), vec![0.0_f32; num_layers * kv * batch_size * num_heads * seq_length * head_dim])
+        .map_err(|_| anyhow::anyhow!("Failed to create tensor from shape and values"))?;
+    Ok(array.into_tensor())
 }
