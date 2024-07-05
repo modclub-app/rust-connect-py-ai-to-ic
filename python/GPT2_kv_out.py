@@ -27,9 +27,12 @@ class GPT2Wrapper(torch.nn.Module):
 
     def forward(self, input_ids, attention_mask):
         outputs = self.model(input_ids, attention_mask=attention_mask, use_cache=True)
-        logits = outputs.logits
-        past_key_values = torch.stack([torch.stack(pk, dim=-1) for pk in outputs.past_key_values], dim=-1)
-        return logits, past_key_values
+        # Avoid reducing the batch dimension
+        outputs_id = torch.argmax(outputs.logits[:, -1, :], dim=-1, keepdim=True)
+        # Flatten past_key_values to a single tensor for ONNX export
+        past_key_values_flat = torch.stack(
+            [torch.cat([pk[0].unsqueeze(0), pk[1].unsqueeze(0)], dim=0) for pk in outputs.past_key_values], dim=0)
+        return outputs_id, past_key_values_flat
 
 # Initialize the wrapper
 wrapper = GPT2Wrapper(model)
@@ -40,18 +43,20 @@ seq_length = 6
 input_ids = torch.randint(0, 50257, (batch_size, seq_length))  # Example input_ids
 attention_mask = torch.ones((batch_size, seq_length))          # Example attention mask
 
+
+
 # Trace and export the model to ONNX
 torch.onnx.export(
     wrapper,
     (input_ids, attention_mask),
     "onnx_model/gpt2_with_kv_out.onnx",
     input_names=["input_ids", "attention_mask"],
-    output_names=["logits", "past_key_values"],
+    output_names=["output_id", "past_key_values"],
     dynamic_axes={
         "input_ids": {0: "batch_size", 1: "sequence"},
         "attention_mask": {0: "batch_size", 1: "sequence"},
-        "logits": {0: "batch_size", 1: "sequence"},
-        "past_key_values": {0: "batch_size", 1: "num_layers", 2: "sequence", 3: "head_dim", 5: "num_heads"}  # Corrected dynamic axes
+        "output_id": {0: "batch_size"},
+        "past_key_values": {2: "batch_size", 4: "sequence"}  # Corrected dynamic axes
     },
     opset_version=11
 )

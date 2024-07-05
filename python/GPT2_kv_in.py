@@ -144,6 +144,7 @@ with torch.no_grad():
 
 past_key_values_zero = torch.zeros( torch.Size([12, 2, 1, 12, 1, 64]) )
 attention_mask_zero = torch.cat([attention_mask, torch.ones(1,1)], dim=-1)
+extended_attention_mask = extended_attention_mask.to(torch.int8)
 print(attention_mask_zero.shape)
 # Export to ONNX
 torch.onnx.export(
@@ -182,6 +183,7 @@ ort_session = ort.InferenceSession("onnx_model/gpt2_with_kv_in.onnx")
 #next_input = torch.cat([input_ids, new_input_ids], dim=1)
 #past_key_values = torch.zeros( torch.Size([12, 2, 1, 12, 1, 64]) )
 extended_attention_mask = copy.deepcopy(extended_attention_mask_init)
+extended_attention_mask = extended_attention_mask.to(torch.int8)
 past_key_values = copy.deepcopy(past_key_values_init)
 past_key_values_flat = torch.stack(
     [torch.cat([pk[0].unsqueeze(0), pk[1].unsqueeze(0)], dim=0) for pk in past_key_values], dim=0)

@@ -13,6 +13,7 @@ fn insert_sample_data(){
     let data: Vec<u8> = vec![1, 2, 3];
     MAP.with(|p| {
         let mut map = p.borrow_mut();
+        map.remove(&0_u8);
         map.insert(0_u8, data)
     });
 }

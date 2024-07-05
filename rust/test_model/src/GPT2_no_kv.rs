@@ -5,13 +5,13 @@ use crate::tract_ndarray::Axis;
 fn main() -> TractResult<()> {
     // Load the ONNX model
     let model = tract_onnx::onnx()
-        .model_for_path("../../python/onnx_model/gpt2_without_kv_caching.onnx")?
+        .model_for_path("../../python/onnx_model/gpt2_no_caching.onnx")?
         .into_optimized()?
         .into_runnable()?;
 
     // Initialize input tokens and attention mask
     let mut input_ids: Vec<i64> = vec![122, 3064]; // Use appropriate initial token
-    let mut attention_mask: Vec<f32> = vec![1.0, 1.0];
+    let mut attention_mask: Vec<i64> = vec![1.0, 1.0];
 
     // Loop for text generation
     for j in 0..3 { // Example: 10 iterations
@@ -24,7 +24,7 @@ fn main() -> TractResult<()> {
 
         // Convert input_ids and attention_mask to tensors
         let input_ids_tensor = create_tensor_i64(&input_ids)?;
-        let attention_mask_tensor = create_tensor_f32(&attention_mask)?;
+        let attention_mask_tensor = create_tensor_i64(&attention_mask)?;
 
         println!("Input IDs Tensor: {:?}", input_ids_tensor);
         println!("Attention Mask Tensor: {:?}", attention_mask_tensor);
@@ -40,9 +40,13 @@ fn main() -> TractResult<()> {
             }
         };
 
-        // Extract logits and get the next token
-        let logits = outputs[0].to_array_view::<f32>()?;
-        let next_token = argmax(logits)?;
+        // Get the next token
+        //let next_token = argmax(logits)?;
+        let next_token_tensor = outputs[0].to_array_view::<i64>()?;
+        let next_token = next_token_tensor[[0, 0]];
+        // Print the next token for debugging
+        println!("Next token: {}", next_token);
+
 
         // Print the next token for debugging
         println!("Next token: {}", next_token);
@@ -72,7 +76,10 @@ fn create_tensor_f32(data: &[f32]) -> TractResult<Tensor> {
     Ok(array.into_tensor())
 }
 
+/*
 fn argmax(logits: ArrayViewD<f32>) -> TractResult<i64> {
     let last_token_logits = logits.index_axis(Axis(1), logits.shape()[1] - 1);
     Ok(last_token_logits.iter().enumerate().max_by(|a, b| a.1.partial_cmp(b.1).unwrap()).unwrap().0 as i64)
 }
+*/
+

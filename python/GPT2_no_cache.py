@@ -27,7 +27,7 @@ class GPT2Wrapper(torch.nn.Module):
 
     def forward(self, input_ids, attention_mask):
         outputs = self.model(input_ids, attention_mask=attention_mask)
-        return outputs.logits
+        return torch.argmax(outputs.logits[:, -1, :], dim=-1, keepdim=True)
 
 # Initialize the wrapper
 wrapper = GPT2Wrapper(model)
@@ -36,29 +36,29 @@ wrapper = GPT2Wrapper(model)
 batch_size = 1
 seq_length = 6
 input_ids = torch.randint(0, 50257, (batch_size, seq_length))  # Example input_ids
-attention_mask = torch.ones((batch_size, seq_length))          # Example attention mask
+attention_mask = torch.ones((batch_size, seq_length), dtype=torch.int8)          # Example attention mask
 
 # Trace and export the model to ONNX
 torch.onnx.export(
     wrapper,
     (input_ids, attention_mask),
-    "onnx_model/gpt2_without_kv_caching.onnx",
+    "onnx_model/gpt2_no_caching.onnx",
     input_names=["input_ids", "attention_mask"],
-    output_names=["logits"],
+    output_names=["output_id"],
     dynamic_axes={
         "input_ids": {0: "batch_size", 1: "sequence"},
         "attention_mask": {0: "batch_size", 1: "sequence"},
-        "logits": {0: "batch_size", 1: "sequence"}
+        "output_id": {0: "batch_size"}
     },
     opset_version=11
 )
 
 # Verify the exported ONNX model
-onnx_model = onnx.load("onnx_model/gpt2_without_kv_caching.onnx")
+onnx_model = onnx.load("onnx_model/gpt2_no_caching.onnx")
 onnx.checker.check_model(onnx_model)
 
 # Initialize ONNX Runtime session
-ort_session = ort.InferenceSession("onnx_model/gpt2_without_kv_caching.onnx")
+ort_session = ort.InferenceSession("onnx_model/gpt2_no_caching.onnx")
 
 # Prepare dummy inputs for ONNX
 input_ids_ort = input_ids.numpy()
