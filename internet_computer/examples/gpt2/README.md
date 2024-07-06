@@ -9,12 +9,14 @@ This project evaluates the performance improvements in token generation for a la
 Experiments were conducted with single update calls. The table below shows that the SIMD integration, released in DFX version 0.20.2-beta.0, greatly increased the model's ability to process tokens.
 
 #### Performance Before and After SIMD Integration
-| Metric                      | Before SIMD Integration | After SIMD Integration |
-|-----------------------------|-------------------------|------------------------|
-| Maximum output tokens       | 1                       | 1                      |
-| Maximum input tokens ("read")| 4                       | 76                     |
+| Metric                               | Before SIMD Integration | After SIMD Integration |
+|--------------------------------------|-------------------------|------------------------|
+| Maximum input tokens for one output  | 4                       | 76                     |
+| Maximum output tokens for four input | 1                       | 17                     |
 
-The SIMD integration enabled the model to "read" 76 tokens and produce a single token, achieving a 19x increase in reading throughput. Although there is a tradeoff between the number of tokens that can be read and the number of tokens that can be output, the baseline without SIMD can never produce more than a single token per update.
+The SIMD integration enabled the model to process 76 input tokens and produce a single output token, achieving a 19x increase in reading throughput. While there is a tradeoff between the number of tokens that can be read and the number of tokens that can be output, the baseline without SIMD can never produce more than a single token per update. 
+
+Similarly, for a fixed point of 4 input tokens, the model could only output a single token before SIMD integration. With SIMD integration, it can now output 17 tokens, resulting in a 17x increase in output capability.
 
 ### Key-Value Caching
 Key-Value (KV) Caching further enhances the model's performance by optimizing the input-output token ratio. The evaluation of KV caching shows significant improvements in efficiency and token generation speed.
