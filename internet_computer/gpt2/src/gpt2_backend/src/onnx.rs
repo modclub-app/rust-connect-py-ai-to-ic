@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use prost::Message;
 use tract_onnx::prelude::*;
-use tract_ndarray::{ArrayD, IxDyn, ArrayViewD};
+use tract_ndarray::{ArrayD, IxDyn};
 
 use anyhow::anyhow;
 use crate::upload_utils::call_model_bytes;
