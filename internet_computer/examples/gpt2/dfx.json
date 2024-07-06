@@ -1,0 +1,21 @@
+{
+  "canisters": {
+    "gpt2_backend": {
+      "candid": "src/gpt2_backend/gpt2_backend.did",
+      "package": "gpt2_backend",
+      "type": "custom",
+      "wasm": "./target/wasm32-wasi/release/gpt2_backend-ic.wasm",
+      "build": [ "bash build.sh" ],
+      "shrink": true,
+      "gzip": true
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

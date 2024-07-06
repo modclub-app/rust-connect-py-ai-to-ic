@@ -11,7 +11,7 @@ fn main() -> TractResult<()> {
 
     // Initialize input tokens and attention mask
     let mut input_ids: Vec<i64> = vec![122, 3064]; // Use appropriate initial token
-    let mut attention_mask: Vec<i8> = vec![1, 1];
+    let mut attention_mask: Vec<i64> = vec![1.0, 1.0];
 
     // Loop for text generation
     for j in 0..3 { // Example: 10 iterations
@@ -24,7 +24,7 @@ fn main() -> TractResult<()> {
 
         // Convert input_ids and attention_mask to tensors
         let input_ids_tensor = create_tensor_i64(&input_ids)?;
-        let attention_mask_tensor = create_tensor_i8(&attention_mask)?;
+        let attention_mask_tensor = create_tensor_i64(&attention_mask)?;
 
         println!("Input IDs Tensor: {:?}", input_ids_tensor);
         println!("Attention Mask Tensor: {:?}", attention_mask_tensor);
@@ -53,7 +53,7 @@ fn main() -> TractResult<()> {
 
         // Append the next token and update the attention mask
         input_ids.push(next_token);
-        attention_mask.push(1);
+        attention_mask.push(1.0);
     }
 
     println!("Final input_ids: {:?}", input_ids);
@@ -69,7 +69,7 @@ fn create_tensor_i64(data: &[i64]) -> TractResult<Tensor> {
     Ok(array.into_tensor())
 }
 
-fn create_tensor_i8(data: &[i8]) -> TractResult<Tensor> {
+fn create_tensor_f32(data: &[f32]) -> TractResult<Tensor> {
     let shape = [1, data.len()];
     let array = tract_ndarray::Array::from_shape_vec(shape, data.to_vec())
         .map_err(|_| anyhow::anyhow!("Failed to create tensor from shape and values"))?;

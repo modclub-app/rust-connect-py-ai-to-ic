@@ -14,7 +14,7 @@ Once the setup is complete, you can proceed with the following steps to build, d
    ```
 3. Use the Cargo command to run specific tasks, such as uploading model chunks. Replace the demo models `[gpt2_embedding.onnx]` with your actual model file names:
    ```bash
-   cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml single_call_backend upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] 0
+   cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml gpt2_backend upload_model_bytes_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] 0
    ```
 4. **Model Preparation**: Follow the commands to prepare the model for use:
 
@@ -95,7 +95,7 @@ These instructions guide you through running a demonstration of our application,
 
    - For local deployment:
      ```bash
-     cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml single_call_backend upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] 0
+     cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml gpt2_backend upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] 0
      ```
 
    - For Internet Computer mainnet deployment:
@@ -109,7 +109,7 @@ These instructions guide you through running a demonstration of our application,
      ```
      And resume uploading using the result:
      ```bash
-     cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml single_call_backend upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] <result number>
+     cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml gpt2_backend upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] <result number>
      ```
 
 2. **Model Preparation**: Follow the commands to prepare the model for use:
