@@ -13,6 +13,7 @@ Experiments were conducted with single update calls. The table below shows that 
 |-----------------------------|-------------------------|------------------------|
 | Maximum output tokens       | 1                       | 1                      |
 | Maximum input tokens ("read")| 4                       | 76                     |
+
 The SIMD integration enabled the model to "read" 76 tokens and produce a single token, achieving a 19x increase in reading throughput. Although there is a tradeoff between the number of tokens that can be read and the number of tokens that can be output, the baseline without SIMD can never produce more than a single token per update.
 
 ### Key-Value Caching
@@ -24,6 +25,7 @@ Key-Value (KV) Caching further enhances the model's performance by optimizing th
 | 48           | 1                                | 5                             | 5x                 |
 | 24           | 2                                | 10                            | 5x                 |
 | 12           | 5                                | 14                            | 2.8x                 |
+
 The efficiency gains from KV caching are more pronounced with longer input sequences, showcasing a 5x improvement for 48 input tokens and a 2.8x improvement for 12 input tokens. This enhancement is also reflected in the speed of token generation.
 
 ### Conclusion
