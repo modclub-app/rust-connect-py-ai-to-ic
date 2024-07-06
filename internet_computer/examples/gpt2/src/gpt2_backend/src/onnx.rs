@@ -4,7 +4,7 @@ use prost::Message;
 use tract_onnx::prelude::*;
 use tract_ndarray::{ArrayD, IxDyn};
 
-use anyhow::anyhow;
+//use anyhow::anyhow;
 use crate::upload_utils::call_model_bytes;
 
 type Model = SimplePlan<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>;

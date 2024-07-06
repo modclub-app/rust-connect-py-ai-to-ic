@@ -216,3 +216,11 @@ print(output_ids)
 # Decode the encoded input IDs back to text
 decoded_terms = tokenizer.decode(response)
 print(f"KV Flattened Decoded Zero-Init Terms: {decoded_terms}")
+
+
+
+print('Inputs:', torch.cat([input_ids, new_input_ids], dim=1))
+print('Outputs:', output_ids)
+
+# Inputs: tensor([[2061,  318,  534, 4004,  198]])
+# Outputs: [198, 2061, 318, 534, 4004, 6332, 30, 198, 198, 2061, 318, 534, 4004, 6332, 30]
