@@ -29,7 +29,7 @@ past_key_values_init = copy.deepcopy(past_key_values)
 new_input_text = " sport?\n"
 new_inputs = tokenizer(new_input_text, return_tensors='pt')
 new_input_ids = new_inputs['input_ids']
-
+print('Next IDs', new_input_ids)
 # Extend the attention mask to account for past key values
 extended_attention_mask = torch.cat(
     [attention_mask, torch.ones((attention_mask.size(0), new_input_ids.size(-1)), dtype=attention_mask.dtype)], dim=-1
@@ -214,13 +214,27 @@ response = torch.tensor(output_ids).long()
 print(output_ids)
 
 # Decode the encoded input IDs back to text
-decoded_terms = tokenizer.decode(response)
+decoded_terms = tokenizer.decode(response, skip_special_tokens=False)
 print(f"KV Flattened Decoded Zero-Init Terms: {decoded_terms}")
 
-
-
-print('Inputs:', torch.cat([input_ids, new_input_ids], dim=1))
+'''
+inputs = torch.cat([input_ids, new_input_ids], dim=1)
+print('Inputs:', inputs)
 print('Outputs:', output_ids)
+# Convert the tensor to a list
+inputs_list = inputs.tolist()
+print('Inputs as list:', inputs_list)
 
-# Inputs: tensor([[2061,  318,  534, 4004,  198]])
-# Outputs: [198, 2061, 318, 534, 4004, 6332, 30, 198, 198, 2061, 318, 534, 4004, 6332, 30]
+# Check the format of inputs_list
+if isinstance(inputs_list[0], list):
+    # Flatten the list if it's nested
+    inputs_list = [item for sublist in inputs_list for item in sublist]
+
+print('Flattened Inputs as list:', inputs_list)
+'''
+# Now decode the terms
+decoded_terms = tokenizer.decode(torch.tensor([2061,  318,  534, 4004, 6332, 198]).long(), skip_special_tokens=False)
+print(f"Input Terms: {decoded_terms}")
+# Inputs: tensor([[2061,  318,  534, 4004, 6332, 30, 198]])
+# WITH ZERO  Outputs: [198, 2061, 318, 534, 4004, 6332, 30, 198, 198, 2061, 318, 534, 4004, 6332, 30]
+# Standard : [198, 40, 1842, 284, 2342, 4346, 13, 314, 1842, 284, 2342, 9669, 13, 314, 1842]
