@@ -3,9 +3,7 @@ use std::cell::RefCell;
 use ic_stable_structures::{memory_manager::{MemoryId, MemoryManager}, DefaultMemoryImpl};
 
 mod onnx;
-mod upload_utils;
-//mod stable_storage;
-
+mod storage;
 
 // WASI polyfill requires a virtual stable memory to store the file system.
 // You can replace `0` with any index up to `254`.
@@ -43,4 +41,35 @@ fn post_upgrade() {
     let wasi_memory = MEMORY_MANAGER.with(|m| m.borrow().get(WASI_MEMORY_ID));
     ic_wasi_polyfill::init_with_memory(&[0u8; 32], &[], wasi_memory);
     //onnx::setup().unwrap();
+}
+
+//////////////////////////////////////////////////////////////////////
+
+
+
+const MODEL_FILE: &str = "onnx_model.onnx";
+
+/// Clears the face detection model file.
+/// This is used for incremental chunk uploading of large files.
+#[ic_cdk::update]
+//fn clear_model_bytes() {
+fn upload_wasm_ref_cell_clear() {
+    storage::clear_bytes(MODEL_FILE);
+}
+
+/// Appends the given chunk to the face detection model file.
+/// This is used for incremental chunk uploading of large files.
+#[ic_cdk::update]
+//fn append_model_bytes(bytes: Vec<u8>) {
+fn upload_model_bytes_chunks(bytes: Vec<u8>) {
+    storage::append_bytes(MODEL_FILE, bytes);
+}
+
+
+
+/// Returns the length of the model bytes.
+#[ic_cdk::query]
+//fn get_model_bytes_length() -> usize {
+fn upload_wasm_ref_cell_length() -> usize {
+    storage::bytes_length(MODEL_FILE)
 }

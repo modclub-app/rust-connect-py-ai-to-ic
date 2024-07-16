@@ -3,9 +3,9 @@ use std::cell::RefCell;
 use prost::Message;
 use tract_onnx::prelude::*;
 use tract_ndarray::{ArrayD, IxDyn};
-
-//use anyhow::anyhow;
-use crate::upload_utils::call_model_bytes;
+use crate::storage;
+use crate::MODEL_FILE;
+use anyhow::anyhow;
 
 type Model = SimplePlan<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>;
 
@@ -13,20 +13,28 @@ thread_local! {
     static MODEL: RefCell<Option<Model>> = RefCell::new(None);
 }
 
-/// Constructs a runnable model from the serialized ONNX model in `REDACTOR_NET`.
+
+
+/// Constructs a runnable model from the serialized ONNX model.
 pub fn setup() -> TractResult<()> {
-    let bytes = match call_model_bytes() {
-        Ok(value) => value,
-        Err(_) => bytes::Bytes::new(),  // Return empty bytes in case of error
-    };
-    let proto: tract_onnx::pb::ModelProto = tract_onnx::pb::ModelProto::decode(bytes)?;
+    // Read the model bytes from the file.
+    let bytes = storage::bytes(MODEL_FILE);
+
+    // Decode the model proto.
+    let proto = tract_onnx::pb::ModelProto::decode(bytes)
+        .map_err(|e| anyhow!("Failed to decode model proto: {}", e))?;
+
+    // Build the runnable model.
     let model = tract_onnx::onnx()
         .model_for_proto_model(&proto)?
         .into_optimized()?
         .into_runnable()?;
+
+    // Store the model in the thread-local storage.
     MODEL.with(|m| {
         *m.borrow_mut() = Some(model);
     });
+
     Ok(())
 }
 
