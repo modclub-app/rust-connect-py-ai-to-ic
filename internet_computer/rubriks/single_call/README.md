@@ -4,24 +4,33 @@
 
 Once the setup is complete, you can proceed with the following steps to build, deploy, and run your project.
 
-1. Start the Internet Computer network locally in the background:
+1. **Setup Cargo**: Ensure you have Cargo installed and set up. If not, follow the instructions on the [Rust website](https://www.rust-lang.org/tools/install) to install Rust and Cargo.
+
+2. Install the necessary Cargo package:
+   ```bash
+   cargo install ic-file-uploader
+   ```
+
+3. Start the Internet Computer network locally in the background:
    ```bash
    dfx start --background
    ```
-2. Deploy your project using `dfx`:
+
+4. Deploy your project using `dfx`:
    ```bash
    dfx deploy
    ```
-3. Use the Cargo command to run specific tasks, such as uploading model chunks. Replace the demo models `[gpt2_embedding.onnx]` with your actual model file names:
+
+5. Use the installed Cargo package to run specific tasks, such as uploading model chunks. Replace the demo model `gpt2_embedding.onnx` with your actual model file names:
    ```bash
-   cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml gpt2_backend upload_model_bytes_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] 0
-   ```
-4. **Model Preparation**: Follow the commands to prepare the model for use:
-
-   ```plaintext
-   setup_model: () → (opt text);
+   ic-file-uploader single_call_backend upload_model_bytes_chunks gpt2_embedding.onnx
    ```
 
+6. Prepare the model for use with the following command:
+   ```bash
+   dfx canister call single_call_backend setup_model
+   ```
+   
 ## Demo Instructions
 
 These instructions guide you through running a demonstration of our application, which illustrates using the Python Transformers library, executing a Python script for model partitioning, loading the model into a canister, and interacting with the backend Canister API.
@@ -95,38 +104,36 @@ These instructions guide you through running a demonstration of our application,
 
    - For local deployment:
      ```bash
-     cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml gpt2_backend upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] 0
+        ic-file-uploader single_call_backend upload_model_bytes_chunks gpt2_embedding.onnx
      ```
 
    - For Internet Computer mainnet deployment:
      ```bash
-     cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml <canister id> upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] 0 ic
-     ```
+        ic-file-uploader single_call_backend upload_model_bytes_chunks gpt2_embedding.onnx --network ic
+    ```
 
    - If an upload is interrupted, query the last successful upload with:
      ```plaintext
-     "upload_wasm_ref_cell_length": () -> (nat64) query;
+        dfx call canister single_call_backend upload_wasm_ref_cell_length
      ```
      And resume uploading using the result:
      ```bash
-     cargo run --manifest-path ../../rust/upload_byte_file/Cargo.toml gpt2_backend upload_model_chunks ../../python/onnx_model/ [gpt2_embedding.onnx] <result number>
+        ic-file-uploader single_call_backend upload_model_bytes_chunks gpt2_embedding.onnx --offset <result number>
      ```
 
-2. **Model Preparation**: Follow the commands to prepare the model for use:
+2. **Model Storage**: This will store the model to stable memory so that it can be efficiently loaded after redeployment:
    ```plaintext
-   setup_model: () → (opt text);
+    dfx canister call single_call_backend upload_wasm_ref_cell_to_stable 
    ```
 
-### Step 7: Interact with the Backend Canister API
+3. **Model Preparation**: Follow the commands to prepare the model for use:
+   ```plaintext
+    dfx canister call single_call_backend setup_model
+   ```
 
-- Access the backend Canister API at the given endpoint for testing:
-  ```plaintext
-  model_inference: (vec int64) → (vec float32) composite_query
-  ```
+### Step 7: Test the API
 
-### Step 8: Test the API
-
-- Demonstrate the model's functionality with a call in command line such as `dfx canister call wasi_ic_ai_sequence_backend model_inference '(vec {1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13})'`
+- Demonstrate the model's functionality with a call in command line such as `dfx canister call single_call_backend model_inference '(vec {1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13})'`
 
 ### Additional Setup for wasm-opt
 
