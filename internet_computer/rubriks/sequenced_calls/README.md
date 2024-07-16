@@ -47,13 +47,6 @@ These instructions guide you through running a demonstration of our application,
   pip install transformers
   ```
 
-- **NodeJS Dependencies for the Frontend**:
-  ```bash
-  npm install --save-dev webpack webpack-cli
-  sudo apt-get install wabt
-  sudo apt-get install binaryen
-  ```
-
 ### Step 2: Install WASI SDK 21
 
 1. Download wasi-sdk-21.0 from [WASI SDK Releases](https://github.com/WebAssembly/wasi-sdk/releases/tag/wasi-sdk-21).

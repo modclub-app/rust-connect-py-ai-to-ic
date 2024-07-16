@@ -95,13 +95,6 @@ These instructions guide you through running a demonstration of our application,
   pip install transformers
   ```
 
-- **NodeJS Dependencies for the Frontend**:
-  ```bash
-  npm install --save-dev webpack webpack-cli
-  sudo apt-get install wabt
-  sudo apt-get install binaryen
-  ```
-
 ### Step 2: Install WASI SDK 21
 
 1. Download wasi-sdk-21.0 from [WASI SDK Releases](https://github.com/WebAssembly/wasi-sdk/releases/tag/wasi-sdk-21).
@@ -169,12 +162,8 @@ These instructions guide you through running a demonstration of our application,
         ic-file-uploader gpt2_backend upload_model_bytes_chunks gpt2_with_kv_in.onnx --offset <result number>
 ```
 
-2. **Model Storage**: This will store the model to stable memory so that it can be efficiently loaded after redeployment:
-   ```plaintext
-    dfx canister call gpt2_backend upload_wasm_ref_cell_to_stable 
-   ```
 
-3. **Model Preparation**: Follow the commands to prepare the model for use:
+2. **Model Preparation**: Follow the commands to prepare the model for use:
    ```plaintext
     dfx canister call gpt2_backend setup_model
    ```

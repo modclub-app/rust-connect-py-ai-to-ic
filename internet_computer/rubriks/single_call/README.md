@@ -23,7 +23,7 @@ Once the setup is complete, you can proceed with the following steps to build, d
 
 5. Use the installed Cargo package to run specific tasks, such as uploading model chunks. Replace the demo model `gpt2_embedding.onnx` with your actual model file names:
    ```bash
-   ic-file-uploader single_call_backend upload_model_bytes_chunks gpt2_embedding.onnx
+   ic-file-uploader single_call_backend upload_model_bytes_chunks ../../../python/onnx_model/gpt2_embedding.onnx
    ```
 
 6. Prepare the model for use with the following command:
@@ -45,13 +45,6 @@ These instructions guide you through running a demonstration of our application,
 - **Python Transformers Library**: The project uses the Transformers library for model management.
   ```bash
   pip install transformers
-  ```
-
-- **NodeJS Dependencies for the Frontend**:
-  ```bash
-  npm install --save-dev webpack webpack-cli
-  sudo apt-get install wabt
-  sudo apt-get install binaryen
   ```
 
 ### Step 2: Install WASI SDK 21
@@ -104,12 +97,12 @@ These instructions guide you through running a demonstration of our application,
 
    - For local deployment:
      ```bash
-        ic-file-uploader single_call_backend upload_model_bytes_chunks gpt2_embedding.onnx
+        ic-file-uploader single_call_backend upload_model_bytes_chunks ../../../python/onnx_model/gpt2_embedding.onnx
      ```
 
    - For Internet Computer mainnet deployment:
      ```bash
-        ic-file-uploader single_call_backend upload_model_bytes_chunks gpt2_embedding.onnx --network ic
+        ic-file-uploader single_call_backend upload_model_bytes_chunks ../../../python/onnx_model/gpt2_embedding.onnx --network ic
     ```
 
    - If an upload is interrupted, query the last successful upload with:
@@ -118,7 +111,7 @@ These instructions guide you through running a demonstration of our application,
 ```
      And resume uploading using the result:
 ```bash
-        ic-file-uploader single_call_backend upload_model_bytes_chunks gpt2_embedding.onnx --offset <result number>
+        ic-file-uploader single_call_backend upload_model_bytes_chunks ../../../python/onnx_model/gpt2_embedding.onnx --offset <result number>
 ```
 
 2. **Model Storage**: This will store the model to stable memory so that it can be efficiently loaded after redeployment:
