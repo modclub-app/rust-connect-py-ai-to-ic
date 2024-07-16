@@ -161,13 +161,13 @@ These instructions guide you through running a demonstration of our application,
     ```
 
    - If an upload is interrupted, query the last successful upload with:
-     ```plaintext
+```plaintext
         dfx call canister gpt2_backend upload_wasm_ref_cell_length
-     ```
+```
      And resume uploading using the result:
-     ```bash
+```bash
         ic-file-uploader gpt2_backend upload_model_bytes_chunks gpt2_with_kv_in.onnx --offset <result number>
-     ```
+```
 
 2. **Model Storage**: This will store the model to stable memory so that it can be efficiently loaded after redeployment:
    ```plaintext
