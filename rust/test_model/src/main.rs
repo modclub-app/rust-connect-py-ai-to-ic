@@ -17,6 +17,7 @@ fn main() -> TractResult<()> {
     //let mut past_key_values_tensor = serialized_past_key_values.into_tensor();
     let mut past_key_values_tensor = create_empty_past_key_values(24, 1, 12, 0, 64)?;
 
+
     // Initialize input tokens and attention mask
     let mut input_ids: Vec<i64> = vec![2061, 318, 534, 4004, 6332, 30, 198]; // Use appropriate initial token
     let mut attention_mask: Vec<i8> = vec![1, 1, 1, 1, 1, 1, 1];

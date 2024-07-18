@@ -55,9 +55,9 @@ Once the setup is complete, you can proceed with the following steps to build, d
    dfx deploy
    ```
 
-5. Use the installed Cargo package to run specific tasks, such as uploading model chunks. Replace the demo model `gpt2_with_kv_in.onnx` with your actual model file names:
+5. Use the installed Cargo package to run specific tasks, such as uploading model chunks. Replace the demo model `gpt2_with_kv.onnx` with your actual model file names:
    ```bash
-   ic-file-uploader gpt2_backend upload_model_bytes_chunks gpt2_with_kv_in.onnx
+   ic-file-uploader gpt2_backend upload_model_bytes_chunks gpt2_with_kv.onnx
    ```
    
 4. **Model Storage**: This will store the model to stable memory so that it can be efficiently loaded after redeployment:
@@ -145,12 +145,12 @@ These instructions guide you through running a demonstration of our application,
 
    - For local deployment:
      ```bash
-        ic-file-uploader gpt2_backend upload_model_bytes_chunks gpt2_with_kv_in.onnx
+        ic-file-uploader gpt2_backend upload_model_bytes_chunks gpt2_with_kv.onnx
      ```
 
    - For Internet Computer mainnet deployment:
      ```bash
-        ic-file-uploader gpt2_backend upload_model_bytes_chunks gpt2_with_kv_in.onnx --network ic
+        ic-file-uploader gpt2_backend upload_model_bytes_chunks gpt2_with_kv.onnx --network ic
     ```
 
    - If an upload is interrupted, query the last successful upload with:
@@ -159,7 +159,7 @@ These instructions guide you through running a demonstration of our application,
 ```
      And resume uploading using the result:
 ```bash
-        ic-file-uploader gpt2_backend upload_model_bytes_chunks gpt2_with_kv_in.onnx --offset <result number>
+        ic-file-uploader gpt2_backend upload_model_bytes_chunks gpt2_with_kv.onnx --offset <result number>
 ```
 
 
