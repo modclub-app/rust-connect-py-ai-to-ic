@@ -5,7 +5,7 @@ use ndarray_npy::read_npy;
 fn main() -> TractResult<()> {
     // Load the ONNX model
     let model = tract_onnx::onnx()
-        .model_for_path("../../python/onnx_model/gpt2_with_kv_in.onnx")?
+        .model_for_path("../../python/onnx_model/gpt2_with_kv.onnx")?
         .into_optimized()?
         .into_runnable()?;
 
@@ -15,14 +15,15 @@ fn main() -> TractResult<()> {
 
     // Convert past_key_values to Tensor
     //let mut past_key_values_tensor = serialized_past_key_values.into_tensor();
-    let mut past_key_values_tensor = create_empty_past_key_values(12, 2, 1, 12, 1, 64)?;
+    let mut past_key_values_tensor = create_empty_past_key_values(24, 1, 12, 0, 64)?;
+
 
     // Initialize input tokens and attention mask
-    let mut input_ids: Vec<i64> = vec![122]; // Use appropriate initial token
-    let mut attention_mask: Vec<i64> = vec![1, 1];
+    let mut input_ids: Vec<i64> = vec![2061, 318, 534, 4004, 6332, 30, 198]; // Use appropriate initial token
+    let mut attention_mask: Vec<i8> = vec![1, 1, 1, 1, 1, 1, 1];
 
     // Loop for text generation
-    for j in 0..3 { // Example: 3 iterations
+    for j in 0..15 { // Example: 3 iterations
         println!(
             "Iteration: {}, Input IDs Length: {}, Attention Mask Length: {}",
             j,
@@ -32,7 +33,7 @@ fn main() -> TractResult<()> {
 
         // Convert input_ids and attention_mask to tensors
         let input_ids_tensor = create_tensor_i64(&input_ids)?;
-        let attention_mask_tensor = create_tensor_i64(&attention_mask)?;
+        let attention_mask_tensor = create_tensor_i8(&attention_mask)?;
 
         // Print tensor details
         //println!("Input IDs Tensor: {:?}", input_ids_tensor);
@@ -97,13 +98,20 @@ fn create_tensor_i64(data: &[i64]) -> TractResult<Tensor> {
     Ok(array.into_tensor())
 }
 
+fn create_tensor_i8(data: &[i8]) -> TractResult<Tensor> {
+    let shape = [1, data.len()];
+    let array = ArrayD::from_shape_vec(IxDyn(&shape), data.to_vec())
+        .map_err(|_| anyhow::anyhow!("Failed to create tensor from shape and values"))?;
+    Ok(array.into_tensor())
+}
+
 fn argmax(logits: ArrayViewD<f32>) -> TractResult<i64> {
     Ok(logits.iter().enumerate().max_by(|a, b| a.1.partial_cmp(b.1).unwrap()).unwrap().0 as i64)
 }
 
-fn create_empty_past_key_values(num_layers: usize, kv: usize, batch_size: usize, num_heads: usize, seq_length: usize, head_dim: usize) -> TractResult<Tensor> {
-    let shape = [num_layers, kv, batch_size, num_heads, seq_length, head_dim];
-    let array = tract_ndarray::Array::from_shape_vec(IxDyn(&shape), vec![0.0_f32; num_layers * kv * batch_size * num_heads * seq_length * head_dim])
+fn create_empty_past_key_values(num_layers: usize, batch_size: usize, num_heads: usize, seq_length: usize, head_dim: usize) -> TractResult<Tensor> {
+    let shape = [num_layers, batch_size, num_heads, seq_length, head_dim];
+    let array = tract_ndarray::Array::from_shape_vec(IxDyn(&shape), vec![0.0_f32; num_layers * batch_size * num_heads * seq_length * head_dim])
         .map_err(|_| anyhow::anyhow!("Failed to create tensor from shape and values"))?;
     Ok(array.into_tensor())
 }

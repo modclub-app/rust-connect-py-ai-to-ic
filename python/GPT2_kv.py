@@ -28,7 +28,7 @@ print("Initial Logits:", logits.shape)
 print("Initial Past Key Values Shapes:", [pkv[0].shape for pkv in past_key_values])
 
 # Prepare inputs for the second run
-new_input_text = " color?"
+new_input_text = " sport?\n"
 new_inputs = tokenizer(new_input_text, return_tensors='pt')
 new_input_ids = new_inputs['input_ids']
 
@@ -90,10 +90,13 @@ class GPT2Wrapper(torch.nn.Module):
     def forward(self, input_ids, attention_mask, past_key_values):
 
         # Reshape past_key_values from (num_layers * 2, batch_size, num_heads, seq_length, head_dim)
-        past_key_values = tuple(
-            (past_key_values[i], past_key_values[i + 1])
-            for i in range(0, 2 * self.num_layers, 2)
-        )
+        if torch.all(past_key_values == 0):
+            past_key_values = None
+        else:
+            past_key_values = tuple(
+                (past_key_values[i], past_key_values[i + 1])
+                for i in range(0, 2 * self.num_layers, 2)
+            )
 
         outputs = self.model(input_ids, attention_mask=attention_mask, past_key_values=past_key_values, use_cache=True)
         outputs_id = torch.argmax(outputs.logits[:, -1, :], dim=-1, keepdim=True)
@@ -156,7 +159,7 @@ print(attention_mask_zero.shape)
 torch.onnx.export(
     wrapper,
     (new_input_ids, extended_attention_mask, past_key_values_flat),
-    "onnx_model/gpt2_with_kv_in.onnx",
+    "onnx_model/gpt2_with_kv.onnx",
     input_names=["input_ids", "attention_mask", "past_key_values_input"],
     output_names=["output_id", "past_key_values_output"],
     dynamic_axes={
@@ -174,11 +177,11 @@ import onnx
 import onnxruntime as ort
 
 # Verify the exported ONNX model
-onnx_model = onnx.load("onnx_model/gpt2_with_kv_in.onnx")
+onnx_model = onnx.load("../../../../modclub/rust-connect-py-ai-to-ic/python/onnx_model/gpt2_with_kv.onnx")
 onnx.checker.check_model(onnx_model)
 
 # Initialize ONNX Runtime session
-ort_session = ort.InferenceSession("onnx_model/gpt2_with_kv_in.onnx")
+ort_session = ort.InferenceSession("../../../../modclub/rust-connect-py-ai-to-ic/python/onnx_model/gpt2_with_kv.onnx")
 
 
 #next_input = torch.cat([input_ids, new_input_ids], dim=1)
@@ -220,143 +223,52 @@ past_key_values_ort = outputs[1]
 print(f"Output ID: {output_id_ort}")
 print(f"Past Key Values: {past_key_values_ort.shape}")
 
-'''
-output_ids.append( output_id_ort[0,0])
 
-#next_input = torch.tensor([[output_id_ort]])
+#########################################################
 
-#new_input_ids_ort = next_input.numpy()
-print(output_id_ort.shape)
-# Update the input for the next iteration
-next_input = torch.tensor([[output_id_ort[0, 0]]])
-new_input_ids_ort = next_input.numpy()
+import torch
 
-print(f"extened atten dtype: {extended_attention_mask.dtype}")
-print(f"extened atten shapoe: {extended_attention_mask.shape}")
-extended_attention_mask = torch.cat([extended_attention_mask, torch.ones((1, 1), dtype=extended_attention_mask.dtype)], dim=1)
+next_input = torch.cat([input_ids, new_input_ids], dim=1)
+next_input_ort = next_input.numpy()
+
+past_key_values_zero = torch.zeros( torch.Size([12, 2, 1, 12, 1, 64]) )
+
+
+extended_attention_mask = copy.deepcopy(extended_attention_mask_init)
+extended_attention_mask = extended_attention_mask.to(torch.int8)
 extended_attention_mask_ort = extended_attention_mask.numpy()
+past_key_values_ort = past_key_values_zero.numpy()
+
+print(next_input_ort)
+print(next_input_ort.shape)
 print(extended_attention_mask_ort.shape)
 print(past_key_values_ort.shape)
-#past_key_values_ort = past_key_values.numpy()
-
-
-print(new_input_ids_ort)
-print(output_id_ort)
-
-# Print data types of outputs
-print(f"output_id_ort dtype: {output_id_ort.dtype}")
-print(f"past_key_values_ort dtype: {past_key_values_ort.dtype}")
-print(f"extened atten dtype: {extended_attention_mask_ort.dtype}")
-
-print(f"Output ID: {output_id_ort}")
-print(f"Past Key Values: {past_key_values_ort.shape}")
-
-
-onnx_inputs = {
-    "input_ids": output_id_ort,
-    "attention_mask": extended_attention_mask_ort,
-    "past_key_values_input": past_key_values_ort
-}
-outputs = ort_session.run(None, onnx_inputs)
-'''
-
-
-
-
-
-
-
-
-
-
-###############################################
-"""
-import torch
-import onnx
-import onnxruntime as ort
-# Dummy inputs for tracing
-batch_size = 1
-seq_length = 2
-num_heads = 12
-head_dim = 64
-num_layers = 12
-
-input_ids = torch.randint(0, 50257, (batch_size, seq_length)).long()   # Example input_ids
-attention_mask = torch.ones((batch_size, seq_length)).long()         # Example attention mask
-past_key_values = torch.zeros((num_layers * 2, batch_size, num_heads, seq_length, head_dim))
-
-new_input_ids = torch.randint(0, 50257, (batch_size, seq_length)).long()  # Example input_ids
-# Extend the attention mask to account for past key values
-extended_attention_mask = torch.cat(
-    [attention_mask, torch.ones((attention_mask.size(0), new_input_ids.size(-1)), dtype=attention_mask.dtype)], dim=-1
-)
-
-# Verify the exported ONNX model
-onnx_model = onnx.load("onnx_model/gpt2_with_kv_in.onnx")
-onnx.checker.check_model(onnx_model)
-
-# Initialize ONNX Runtime session
-ort_session = ort.InferenceSession("onnx_model/gpt2_with_kv_in.onnx")
-
-# Prepare dummy inputs for ONNX
-new_input_ids_ort = new_input_ids.numpy()
-extended_attention_mask_ort = extended_attention_mask.numpy()
-past_key_values_ort = past_key_values.numpy()
 
 # Create input feed dictionary
 onnx_inputs = {
-    "input_ids": new_input_ids_ort,
+    "input_ids": next_input_ort,
     "attention_mask": extended_attention_mask_ort,
     "past_key_values_input": past_key_values_ort
 }
 
 
-# Run inference
-outputs = ort_session.run(None, onnx_inputs)
 
-# Verify the outputs
-logits_ort = outputs[0]
-past_key_values_ort = outputs[1]
-print(f"Logits: {logits_ort.shape}")
-print(f"Past Key Values: {past_key_values_ort.shape}")
+output_ids = []
+for i in range(15):
 
+    outputs = ort_session.run(None, onnx_inputs)
+    # Verify the outputs
+    output_id_ort = outputs[0]
+    past_key_values_ort = outputs[1]
+    print(f"Output ID: {output_id_ort}")
+    print(f"Past Key Values: {past_key_values_ort.shape}")
+    next_input = torch.tensor([[current_out]])
+    extended_attention_mask = torch.cat([ extended_attention_mask, torch.ones((1,1), dtype=extended_attention_mask.dtype) ], dim=1) \
+    extended_attention_mask_ort = extended_attention_mask.numpy()
 
-
-#import numpy as np
-past_key_values_zero = torch.zeros((num_layers * 2, batch_size, num_heads, seq_length, head_dim))
-onnx_inputs = {
-    "input_ids": new_input_ids_ort,
-    "attention_mask": extended_attention_mask_ort,
-    "past_key_values_input": past_key_values_zero.numpy()
-}
-# Run inference
-outputs = ort_session.run(None, onnx_inputs)
-
-# Verify the outputs
-logits_ort = outputs[0]
-past_key_values_ort = outputs[1]
-print(f"Logits: {logits_ort.shape}")
-print(f"Past Key Values: {past_key_values_ort.shape}")
-
-#"""
-
-'''
-# Special token used by GPT-2
-start_token = "<|endoftext|>" #50256
-
-
-# Encode the start token
-input_ids = tokenizer.encode(start_token, return_tensors="pt")
-attention = torch.ones(input_ids.shape)
-# Generate text
-with torch.no_grad():
-    #output = model(input_ids)
-    outputs = wrapper(input_ids, attention, None)
-# Extract past_key_values
-past_key_values = outputs[1]
-
-
-import numpy as np
-# Save the serialized past_key_values to a file
-np.save('onnx_model/end_of_text.npy', past_key_values.cpu().numpy())
-'''
+    # Create input feed dictionary
+    onnx_inputs = {
+        "input_ids": next_input_ort,
+        "attention_mask": extended_attention_mask_ort,
+        "past_key_values_input": past_key_values_ort
+    }

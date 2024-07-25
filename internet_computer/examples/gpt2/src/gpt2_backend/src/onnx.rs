@@ -55,11 +55,11 @@ pub fn create_tensor_and_run_model(max_tokens: u8, token_ids: Vec<i64>) -> Resul
         let model = model.borrow();  // Borrow the contents of the RefCell
         let model = model.as_ref().unwrap();  // Ensure the model is initialized
 
-        //let mut past_key_values_tensor = create_empty_past_key_values(12, 2, 1, 12, 1, 64)?;
-        let mut past_key_values_tensor = create_empty_past_key_values(24, 1, 12, 1, 64)?;
+        let mut past_key_values_tensor = create_empty_past_key_values(24, 1, 12, 0, 64)?;
+        //let mut past_key_values_tensor = create_empty_past_key_values(0, 1, 0, 0, 0)?;
 
         let mut input_ids = token_ids;
-        let mut attention_mask: Vec<i8> = vec![1; input_ids.len() + 1];
+        let mut attention_mask: Vec<i8> = vec![1; input_ids.len()];
         let mut output_ids: Vec<i64> = Vec::new();
 
         for _ in 0..max_tokens {
