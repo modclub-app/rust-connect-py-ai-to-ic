@@ -60,16 +60,14 @@ const MODEL_FILE: &str = "onnx_model.onnx";
 /// Clears the face detection model file.
 /// This is used for incremental chunk uploading of large files.
 #[ic_cdk::update]
-//fn clear_model_bytes() {
-fn upload_wasm_ref_cell_clear() {
+fn clear_model_bytes() {
     storage::clear_bytes(MODEL_FILE);
 }
 
 /// Appends the given chunk to the face detection model file.
 /// This is used for incremental chunk uploading of large files.
 #[ic_cdk::update]
-//fn append_model_bytes(bytes: Vec<u8>) {
-fn upload_model_bytes_chunks(bytes: Vec<u8>) {
+fn append_model_bytes(bytes: Vec<u8>) {
     storage::append_bytes(MODEL_FILE, bytes);
 }
 
@@ -77,7 +75,6 @@ fn upload_model_bytes_chunks(bytes: Vec<u8>) {
 
 /// Returns the length of the model bytes.
 #[ic_cdk::query]
-//fn get_model_bytes_length() -> usize {
-fn upload_wasm_ref_cell_length() -> usize {
+fn model_bytes_length() -> usize {
     storage::bytes_length(MODEL_FILE)
 }
