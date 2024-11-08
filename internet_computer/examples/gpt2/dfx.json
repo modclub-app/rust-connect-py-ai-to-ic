@@ -8,6 +8,11 @@
       "build": [ "bash build.sh" ],
       "shrink": true,
       "gzip": true
+    },
+    "tokenizer_backend": {
+      "candid": "src/tokenizer_backend/tokenizer_backend.did",
+      "package": "tokenizer_backend",
+      "type": "rust"
     }
   },
   "defaults": {
